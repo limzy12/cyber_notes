@@ -455,7 +455,7 @@ Before proceeding any further, we need to introduce the concept of *staged* and 
 
 In short, we can think of the payload being split into two parts -- a small initial stager, and a bulkier reverse shell code that is downloaded when the stager is activated.
 
-Staged payloads require a special listener, such as the Metasploit multi/handler. 
+Staged payloads require a special listener, such as the Metasploit [multi/handler](#metasploit-multihandler). 
 
 **Stageless** payloads are what we have seen up until this point. They are entirely self-contained: there is only one piece of code, which sends a shell back to the listener upon execution. 
 
@@ -501,4 +501,19 @@ We can then pipe the output of this command into `grep` to search for specific p
 
 gives us the full set of payloads for 32-bit Linux systems.
 
+## Metasploit multi/handler
+
+*Multi/handler* is a tool to catch reverse shells. It is essential when using Meterpreter shells, and the go-to when using **staged** payloads. 
+
+To get started:
+1. open Metasploit with `msfconsole`,
+2. run the command `use multi/handler` in the console. 
+
+We can use the `options` command to view all the available options. There are three options that we will need to set: the payload, LHOST and LPORT -- identical to the options we set when generating shellcode with [msfvenom](#msfvenom). To set these options, we use the commands:
+
+* `set PAYLOAD <PAYLOAD>`
+* `set LHOST <LISTENER_IP>`
+* `set LPORT <LISTENER_PORT>`
+
+Once these options are set, we can then start the listener using the command `exploit -j` -- this tells Metasploit to launch the module running as a job in the background. 
 
