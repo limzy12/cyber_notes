@@ -1,6 +1,33 @@
 # What the Shell? 
 An introduction to sending and receiving (reverse/bind) shells when exploiting target machines.
 
+* [What is a shell?](#what-is-a-shell)
+* [Tools](#tools)
+   * [Netcat](#netcat)
+   * [Socat](#socat)
+   * [Metasploit - multi/handler](#metasploit---multihandler)
+   * [Msfvenom](#msfvenom)
+* [Types of shells](#types-of-shells)
+   * [Reverse Shell Example](#reverse-shell-example)
+   * [Bind Shell example](#bind-shell-example)
+   * [Interactivity](#interactivity)
+* [Netcat](#netcat-1)
+* [Shell stablisation](#shell-stablisation)
+   * [Technique 1: Python](#technique-1-python)
+   * [Technique 2: rlwrap](#technique-2-rlwrap)
+   * [Technique 3: Socat](#technique-3-socat)
+* [Socat](#socat-1)
+   * [Stablised shells](#stablised-shells)
+* [Socat encrypted shells](#socat-encrypted-shells)
+* [Common shell payloads](#common-shell-payloads)
+   * [for Windows Powershell](#for-windows-powershell)
+   * [Other payloads](#other-payloads)
+* [msfvenom](#msfvenom-1)
+   * [Staged vs Stageless](#staged-vs-stageless)
+   * [Payload naming conventions](#payload-naming-conventions)
+* [Metasploit multi/handler](#metasploit-multihandler)
+* [WebShells](#webshells)
+* [Next steps](#next-steps)
 ## What is a shell?
 
 A *shell* is what we use to interface with a Command Line environment. The common `bash` or `sh` programs in Linux, and `cmd.exe` and Powershell on Windows are all examples of a shell.
