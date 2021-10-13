@@ -235,13 +235,13 @@ The "Overview" tab provides information from all four sections on a single page 
 The Command Prompt (`cmd`) is similar to the terminal in Linux systems -- we interact with it via text commands. We will look at some simple commands in this section. 
 
 The command `hostname` outputs the computer name. For example:
-```console
+```powershell
 > hostname
 John-PC
 ```
 
 The command `whoami` outputs the name of the logged-in user. For example:
-```console
+```powershell
 > whoami
 John-PC\John
 ```
@@ -249,7 +249,7 @@ John-PC\John
 A commonly used command is `ipconfig` which will show the network address settings of the computer.
 
 To retrieve the help manual for a command, we can suffix the command with `/?`. For example, to view the help manual of `ipconfig`,
-```console
+```powershell
 > ipconfig /?
 ```
 
@@ -280,7 +280,7 @@ Windows Update is a service provided by Microsoft to provide security updates, f
 Updates are typically released on the **2nd Tuesday of every month** (commonly known as *Patch Tuesday*). However, if a particular update is critical or urgent, then Microsoft may push the update immediately via the Windows Update service.
 
 Windows Update can be found in the system settings. Alternatively, we can run the command
-```console
+```powershell
 control /name Microsoft.WindowsUpdate
 ```
 

@@ -57,13 +57,13 @@ We interact with the Terminal via text-based commands. The first two commands th
 
 * `echo` : output any text provided as an argument. e.g.
 
-    ```console
+    ```sh
     ~$ echo "Hello World"
     Hello World
     ```
 * `whoami` : returns the user that is currently logged in. e.g. 
 
-    ```console
+    ```sh
     ~$ whoami
     ubuntu
     ```
@@ -77,7 +77,7 @@ It is essential that we are able to navigate through the file system via the Ter
 
 * `ls` (listing): listing all files in the current directory. e.g. 
 
-    ```console
+    ```sh
     ~$ ls
     'My Documents'  'My Pictures'   'Important Files'
     ```
@@ -86,13 +86,13 @@ It is essential that we are able to navigate through the file system via the Ter
 
     We can even access the listing of a sub-directory directly:
 
-    ```console
+    ```sh
     ~$ ls "My Pictures"
     ```
 
 * `cd` (change directory): change to another directory. In the previous example, if we wanted to move to the "Important Files" sub-directory, we would execute the command
 
-    ```console
+    ```sh
     ~$ cd "Important Files"
     ~/"Important Files"$ 
     ```
@@ -102,14 +102,14 @@ It is essential that we are able to navigate through the file system via the Ter
 
     If we execute the command
 
-    ```console
+    ```sh
     ~$ cat Hello.txt
     the quick brown fox jumps over the lazy dog!
     ```
 
 * `pwd` (print working directory): outputs the current directory. e.g.
 
-    ```console
+    ```sh
     ~/Documents$ pwd
     /home/ubuntu/Documents 
     ```
@@ -120,13 +120,13 @@ It is essential that we are able to navigate through the file system via the Ter
 
 To search for files in a filesystem, we can use the `find` command. If we know the name of the file we are looking for we can execute 
 
-```console
+```sh
 ~$ find -name <FILE_NAME>
 ```
 
 We can use the `find` command together with the wildcard operator `*`. Suppose we want to find all `.txt` files, we can execute the command
 
-```console
+```sh
 ~$ find -name *.txt
 ```
 
@@ -134,7 +134,7 @@ We can use the `find` command together with the wildcard operator `*`. Suppose w
 
 We can also search the contents of files for a specific value using the `grep` command. 
 
-```console
+```sh
 ~$ grep <SEARCH_STRING> <FILE_NAME>
 ```
 
@@ -146,7 +146,7 @@ Shell operators give us an extra level of control in the Terminal. We will look 
 * `&&` : This operator allows us to join multiple commands into a list which is executed sequentially. e.g. `<command1> && <command2>`, but it should be noted that `command2` only executes if `<command1>` was executed successfully. 
 * `>` : This operator redirects output to somewhere else. e.g. if we execute the command
 
-    ```console
+    ```sh
     ~$ echo hello > welcome
     ```
 
@@ -166,14 +166,14 @@ It is common for commands to allow arguments identified by a hyphen and keyword 
 
 Flags and switches extend the behaviour of commands. Without them, commands will perform their default behaviour. Consider the example of `ls`. By default, `ls` does not show hidden files. e.g.
 
-```console
+```sh
 ~$ ls
 folder1 image1
 ```
 
 But we can extend `ls` to show hidden files using the `--all` (or its shorthand `-a`) flag. e.g.
 
-```console
+```sh
 ~$ ls --all
 . .. .bash_logout .bashrc .hiddenfolder folder1 image1
 ```
@@ -193,7 +193,7 @@ In a [previous section](#interacting-with-the-filesystem), we looked at the comm
 
 * `touch` : creates a new file. e.g.
   
-    ```console
+    ```sh
     ~$ ls
     file1 file2
 
@@ -205,7 +205,7 @@ In a [previous section](#interacting-with-the-filesystem), we looked at the comm
 
 * `mkdir` (make directory): creates a new folder e.g.
   
-    ```console
+    ```sh
     ~$ ls
     file1 
 
@@ -217,7 +217,7 @@ In a [previous section](#interacting-with-the-filesystem), we looked at the comm
 
 * `rm` (remove): removes files and folders. Files can be removed by executing the command `rm <file name>`. e.g. 
 
-    ```console
+    ```sh
     ~$ ls
     file1 file2
 
@@ -229,7 +229,7 @@ In a [previous section](#interacting-with-the-filesystem), we looked at the comm
 
     To delete folders, we will need to include the `-r` switch: `rm -r <folder name>`. e.g.
 
-    ```console
+    ```sh
     ~$ ls
     folder1 folder2
 
@@ -244,13 +244,13 @@ In a [previous section](#interacting-with-the-filesystem), we looked at the comm
 
 * `cp` (copy): copies the entire contents of a file from a source to a destination. The command takes in two arguments: the source (name of the existing file) and the destination (name we wish to assign to the new file), i.e.
 
-    ```console
+    ```sh
     ~$ cp <SOURCE> <DESTINATION>
     ```
 
     An example is
 
-    ```console
+    ```sh
     ~$ ls
     file1
 
@@ -262,7 +262,7 @@ In a [previous section](#interacting-with-the-filesystem), we looked at the comm
 
 * `mv` (move): moves or renames files. Similar to `cp`, this command takes two arguements. e.g.
 
-    ```console
+    ```sh
     ~$ ls
     folder file1 file2
 
@@ -282,7 +282,7 @@ In a [previous section](#interacting-with-the-filesystem), we looked at the comm
 
 * `file` : determines the type of a file. File types are usually denoted by their extension (such as `.txt` or `.csv`) but this is not necessary. The `file` command allows us to identify the file's type, from which we can then deduce its purpose. e.g.
 
-    ```console
+    ```sh
     ~$ file note
     note: ASCII text
     ```
@@ -311,7 +311,7 @@ One feature of Linux the granular control over file permissions. Whilst a user t
 
 For example, on a web server, we have an `admin` user that oversees the overall operation. The web server hosts two websites which are owned by groups `website1` and `website2`. The file permissions may look something like this:
 
-```console
+```sh
 -rw-rw-r-- 1 admin website1 16 Jul 23 01:00 website1.config
 -rw-rw-r-- 1 admin website2 16 Jul 20 23:13 website2.config
 ```
@@ -358,7 +358,7 @@ In the previous sections, we have interacted with text in files via a combinatio
 
 To create or edit a file using nano, we simply run the command 
 
-```console
+```sh
 ~$ nano <FILE_NAME>
 ```
 
@@ -388,7 +388,7 @@ Being able to transfer files is also an essential skill. Try are multiple ways t
 ### `wget`
 
 The `wget` command allows us to download files from the **Web** via HTTP -- as if we were accessing the file from the browser. We simply provide, as an argument, the URL to the file we wish to download.
-```console
+```sh
 ~$ wget <URL_TO_FILE>
 ```
 
@@ -397,18 +397,18 @@ The `wget` command allows us to download files from the **Web** via HTTP -- as i
 SCP is a means of securely copying files between our current system and the remote system; it transfers files between two computers using the SSH protocol to provide both *authentication* and *encryption*.
 
 The `scp` command takes the source and destination as its parameters. i.e.
-```console
+```sh
 ~$  scp <SOURCE> <DESTINATION>
 ```
 
 For example, if we want to transfer a file `important.txt` from our current system to a user `user` on a remote system at `192.168.1.30`, then the command is 
-```console
+```sh
 scp important.txt user@192.168.1.30:/home/user/transferred.txt
 ```
 and the file will be saved at `/home/user` as `transferred.txt`.
 
 On the other hand, if we want to transfer a file from a remote system to our current system, using the example before, the command is 
-```console
+```sh
 scp user@192.168.1.30:/home/user/important.txt transferred.txt
 ```
 and the file `transferred.txt` will be stored in the current working directory. 
@@ -422,7 +422,7 @@ HTTPServer serves the files in the directory where it is run, but this can be ch
 Consider the following example: 
 
 Source device (IP: `192.168.1.20`)
-```console
+```sh
 ~/webserver$ ls
 file
 
@@ -431,7 +431,7 @@ Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...
 ```
 
 Destination device (omitting the output of `wget`)
-```console
+```sh
 ~/files$ ls
 
 ~/files$ wget http://192.168.1.20:8080/file
@@ -454,7 +454,7 @@ Processes are the programs running on the machine. Processes are managed by the 
 
 We can use the `ps` (process status) command to view the list of currently running processes **in the current user's session** and additional information such as the status codes and the CPU usage. e.g.
 
-```console
+```sh
 ~$ ps
     PID TTY         TIME CMD
       8 pts/0   00:00:00 bash
@@ -470,7 +470,7 @@ Note how the PID of the process `ps` increments from 19 to 20.
 
 In order to view the processes run by other users and processes not belonging to a session -- i.e. system processes -- we use the `aux` argument. e.g.
 
-```console
+```sh
 ~$ ps aux
 USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND                    
 root         1  0.6  0.0    892   580 ?        Sl   13:29   0:00 /init
@@ -488,7 +488,7 @@ Another useful command is `top` (table of processes), which gives us real-time s
 
 To kill a process, we can use the `kill` command with the PID of the process we want to kill as the argument. For example, to kill a process with the PID 1245, we execute
 
-```console
+```sh
 ~$ kill 1245
 ```
 
@@ -514,13 +514,13 @@ Some applications can be started on system boot, e.g. web servers, database serv
 
 The command `systemctl` allows us to interact with `systemd`, and we can use this command to start or stop processes. The command takes two arguments:
 
-```console
+```sh
 ~$ systemctl <OPTION> <SERVICE>
 ```
 
 For example, if we want to tell the system to start an instance of apache web server manually, we would run the command:
 
-```console
+```sh
 ~$ systemctl start apache2
 ```
 
@@ -539,7 +539,7 @@ We can also push processes such as scripts to the background by pressing `Ctrl +
 
 We can also pull a process running in the background into the foreground by the command `fg`: 
 
-```console
+```sh
 ~$ fg <JOB_ID>
 ```
 
@@ -551,7 +551,7 @@ We can schedule certain actions or tasks, such as backing up files, to take plac
 
 A `crontab` is simply a file with formatting that is recognised by the `cron` process -- executing each line in the `crontab` step-by-step. A `crontab` instruction has the following format:
 
-```console
+```sh
 <MIN> <HOUR> <DOM> <MON> <DOW> <COMMAND>
 ```
 
@@ -573,7 +573,7 @@ Other than the `<COMMAND>` field, the fields generally have numerical values. Ho
 
 As an example, suppose we want to backup the contents of `/home/user/Documents` to `/var/backups/` every 12 hours. The `crontab` entry would be 
 
-```console
+```sh
 0 */12 * * * cp -R /home/user/Documents /var/backups/
 ```
 
@@ -596,7 +596,7 @@ We will walkthrough an example where we install "Sublime Text 3" onto our system
 
 **Step 1.**  We need to add the GPG key for the developers of "Sublime Text 3". We do so by first downloading the key, and then use `apt-key` to trust it:
     
-    ```console
+    ```sh
     ~$ wget -qO https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
     ```
 
@@ -604,7 +604,7 @@ We will walkthrough an example where we install "Sublime Text 3" onto our system
 
 We first create a file in `/etc/apt/sources.list.d`
 
-```console
+```sh
 /etc/apt/sources.list.d$ touch sublime-text.list
 ```
 
@@ -616,7 +616,7 @@ deb https://download.sublimetext.com/ apt/stable/
 
 and update apt using `apt update` so that this new entry is recognised. We can now install "Sublime Text 3" from the repository by running
 
-```console
+```sh
 ~$ apt install sublime-text
 ```
 
@@ -624,7 +624,7 @@ To remove a repository, we can simply reverse the steps above.
 
 To remove a software, we can execute the command
 
-```console
+```sh
 apt remove <SOFTWARE>
 ```
 

