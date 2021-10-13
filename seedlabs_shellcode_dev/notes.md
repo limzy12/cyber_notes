@@ -54,7 +54,7 @@ section .text
 
 We can compile this assembly code using `nasm` -- an assembler and disassembler for the Intel `x86` and `x64` architectures. The option `-f elf32` indicates that we want to assemble the code to 32-bit ELF *object code*. The full command is:
 
-```console
+```sh
 ~$ nasm -f elf32 mysh.s -o mysh.o
 ```
 
@@ -62,7 +62,7 @@ We can compile this assembly code using `nasm` -- an assembler and disassembler 
 
 This produces the *object code* `mysh.o`. To generate the executable binary, we use the *linker* `ld`. The option `-m elf_i386` indicates that we want to generate the 32-bit ELF binary. The full command is: 
 
-```console
+```sh
 ~$ ld -m elf_i386 mysh.o -o mysh
 ```
 
