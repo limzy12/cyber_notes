@@ -160,5 +160,7 @@ There are various techniques that can get rid of zeros in the shell code:
 * If we want to store, say an 8-bit number like `0x99` into a 32-bit register like `eax`, We cannot simply use `mov eax, 0x99`. The compiler will pad the 8-bit number with zeros to become a 32-bit number -- so the operand becomes `0x00000099` which has three zeros. To overcome this, we can first set `eax` to zero (using the `xor` trick), and then assign the 8-bit number `0x99` to the `al` register, which refers to the least significant 8-bits of the `eax` register.
 
     > For the four of the general purpose 32-bit registers in the `x86` architecture -- `eax`, `ebx`, `ecx` and `edx`, we may refer to their subsections. Taking `eax` as an example, we may refer to the lower 16-bits of the register by `ax`. Within `ax`, we can refer to the lower 8-bits by `al` and the upper 8-bits by `ah`.
-    ![Register aliasing](./img/register_alias.png "Register aliasing")
+
+
+    >![Register aliasing](./img/register_alias.png "Register aliasing")
 
