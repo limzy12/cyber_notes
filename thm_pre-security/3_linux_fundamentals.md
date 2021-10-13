@@ -596,9 +596,9 @@ We will walkthrough an example where we install "Sublime Text 3" onto our system
 
 **Step 1.**  We need to add the GPG key for the developers of "Sublime Text 3". We do so by first downloading the key, and then use `apt-key` to trust it:
     
-    ```sh
-    ~$ wget -qO https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-    ```
+```sh
+~$ wget -qO https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
+```
 
 **Step 2.** We then need to add the repository for "Sublime Text 3" into our apt sources list. A good practice is to have a separate file for every repository we add.
 
