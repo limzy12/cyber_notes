@@ -162,5 +162,6 @@ There are various techniques that can get rid of zeros in the shell code:
     > For the four of the general purpose 32-bit registers in the `x86` architecture -- `eax`, `ebx`, `ecx` and `edx`, we may refer to their subsections. Taking `eax` as an example, we may refer to the lower 16-bits of the register by `ax`. Within `ax`, we can refer to the lower 8-bits by `al` and the upper 8-bits by `ah`.
 
 
-    >![Register aliasing](./img/register_alias.png "Register aliasing")
+    >![Register aliasing](./img/register_alias.png "Register aliasing") 
+    *Taken from [nayuki.io](https://www.nayuki.io/page/a-fundamental-introduction-to-x86-assembly-programming)*
 
