@@ -128,7 +128,9 @@ Although not all vulnerabilities have issues with zero bytes, it is a requiremen
 
 There are various techniques that can get rid of zeros in the shell code:
 
-* If we want to assign zero to a register, say `eax`, we would naively use the instruction `mov eax, 0`. However, this results in a zero in the machine code. To solve this problem, the typical method is to use the **equivalent instruction** `xor eax, eax`. To see how this works, let us look at the truth table of XOR: 
+* If we want to assign zero to a register, say `eax`, we would naively use the instruction `mov eax, 0`. However, this results in a zero in the machine code. 
+  
+  To solve this problem, the typical method is to use the **equivalent instruction** `xor eax, eax`. To see how this works, let us look at the truth table of XOR: 
 
   |  A  |  B  | A XOR B |
   |:---:|:---:|:-------:|
@@ -153,15 +155,66 @@ There are various techniques that can get rid of zeros in the shell code:
   ```
   Compiling it into object code and using `objdump`, we get the following result:
 
-  ![mov vs xor](./img/mov_vs_xor.png "mov vs xor")
+  ![mov vs. xor](./img/mov_vs_xor.png "mov vs. xor")
 
   Looking at the machine code in red, we see that the `mov` instruction results in four zeros in the machine code, while the `xor` instruction has no zeros. Both instructions result in the register `eax` having the value `0x00000000`.
 
-* If we want to store, say an 8-bit number like `0x99` into a 32-bit register like `eax`, We cannot simply use `mov eax, 0x99`. The compiler will pad the 8-bit number with zeros to become a 32-bit number -- so the operand becomes `0x00000099` which has three zeros. To overcome this, we can first set `eax` to zero (using the `xor` trick), and then assign the 8-bit number `0x99` to the `al` register, which refers to the least significant 8-bits of the `eax` register.
+* If we want to store, say an 8-bit number like `0x99` into a 32-bit register like `eax`, We cannot simply use `mov eax, 0x99`. The compiler will pad the 8-bit number with zeros to become a 32-bit number -- so the operand becomes `0x00000099` which has three zeros. 
+  
+  To overcome this, we can first set `eax` to zero (using the `xor` trick), and then assign the 8-bit number `0x99` to the `al` register, which refers to the least significant 8-bits of the `eax` register.
 
-    > For the four of the general purpose 32-bit registers in the `x86` architecture -- `eax`, `ebx`, `ecx` and `edx`, we may refer to their subsections. Taking `eax` as an example, we may refer to the lower 16-bits of the register by `ax`. Within `ax`, we can refer to the lower 8-bits by `al` and the upper 8-bits by `ah`.
+  > For the four of the general purpose 32-bit registers in the `x86` architecture -- `eax`, `ebx`, `ecx` and `edx`, we may refer to their subsections. Taking `eax` as an example, we may refer to the lower 16-bits of the register by `ax`. Within `ax`, we can refer to the lower 8-bits by `al` and the upper 8-bits by `ah`.
 
 
-    >![Register aliasing](./img/register_alias.png "Register aliasing") 
-    *Taken from [nayuki.io](https://www.nayuki.io/page/a-fundamental-introduction-to-x86-assembly-programming)*
+  >![Register aliasing](./img/register_alias.png "Register aliasing") 
+  *Taken from [nayuki.io](https://www.nayuki.io/page/a-fundamental-introduction-to-x86-assembly-programming)*
 
+  To explicitly see the difference, we look at the machine code for the following code `al.s`
+
+  ```assembly
+  ; al.s
+
+  section .text
+  global _start
+    _start:
+      ; Comparing between moving an 8-bit value to eax and al
+      mov  eax, 0x99	; moving 0x99 into eax
+      mov   al, 0x99	; moving 0x99 into al
+  ```
+  The object code after compilation is
+
+  ![eax vs. al](./img/eax_vs_al.png "eax vs. al")
+
+  We can see that indeed, the zeros have been removed from the shell code.
+
+* Another method is to make use of bit shifts. Suppose we want to assign the string `"xyz"` into the register `ebx`. Like before, the string is only 24-bits and will be padded with zeros to fit into the 32-bit register. In  
+
+  We can eliminate the zeros here using bit shifts. We instead assign a string like `"xyz#"` to the register `ebx`, i.e. we pad the string manually with some random character. Most Intel CPUs are little endian, where the least significant byte is stored at the lower address, the hexadecimal value `0x237A7978` is stored into `ebx`. 
+  
+  Then, we shift the register to the **left** by 8-bits, so the most significant 8-bits -- which represent `'#'` -- are pushed out and discarded. We then shift the register **right** and the most significant byte will filled with a zero. The state of the register after each instruction is illustrated below. 
+
+  ```assembly
+  mov  ebx, "xyz#" ;    ebx = 0x237A7978
+  shl  ebx, 8      ;    ebx = 0x7A797800
+  shr  ebx, 8      ;    ebx = 0x007A7978
+  ```
+
+  To see this explicitly, we look at the machine code for the example `bitshift.s`.
+
+  ```assembly
+  section .text
+  global _start
+    _start:
+      ; Using bitshift to insert values less than 32-bits
+      mov  ebx, "xyz" ;  inserting a 24-bit value
+
+      mov  ebx, "xyz#";  inserting the self-padded 24-bit value
+      shl  ebx, 8     ;  shift left 8-bits
+      shr  ebx, 8     ;  shift right 8-bits
+  ```
+
+  `objdump` gives the following output
+
+  ![bitshift](./img/bitshift.png "bitshift")
+
+  and we see that we have eliminated zeros from the shell code. 
