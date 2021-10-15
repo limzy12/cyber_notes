@@ -251,6 +251,8 @@ section .text
 If we instead want to use the shellcode to execute `/bin/bash`, we will need to make some modifications to `mysh.s`. The edited shell code `mysh_bash.s` is shown below. 
 
 ```assembly
+; mysh_bash.s
+
 section .text
   global _start
     _start:
