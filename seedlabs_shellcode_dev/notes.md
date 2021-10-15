@@ -391,5 +391,103 @@ bbb=5678
 cccc=1234
 ```
 
-To do so, we need to construct the environment variable array on the stack, and store the address of this array to the `edx` register before invoking `execve()`. 
+To do so, we need to construct the environment variable array on the stack, and store the address of this array to the `edx` register before invoking `execve()`. The shellcode `myenv.s` is shown below. 
 
+```assembly
+; myenv.s
+
+section .text
+  global _start
+    _start:
+      ; Store the argument string on stack
+      xor  eax, eax
+      push eax          ; Use 0 to terminate the string
+      push "/env"
+      push "/bin"
+      push "/usr"
+      mov  ebx, esp     ; Get the string address
+
+      ; Construct the argument array argv[]
+      push eax          ; argv[1] = 0
+      push ebx          ; argv[0] points "/usr/bin/env"
+      mov  ecx, esp     ; Get the address of argv[]
+
+      ; Construct env strings on stack
+      push eax          ; 0 to terminate string
+      push "1234"       ;
+      push "aaa="       ; "aaa=1234"
+      push eax          ; 0 to terminate string
+      push "5678"       ;
+      push "bbb="       ; "bbb=5678"
+      mov  al, "4"      ;
+      push eax          ;
+      push "=123"       ;
+      push "cccc"       ; "cccc=1234"
+      mov  eax, esp     ;
+
+      ; Pushing env variable array onto stack
+      xor  edx, edx     ;
+      push edx		    ; 0 to terminate array
+      push eax	      	;
+      add  eax, 0xc     ; 0xc = 12
+      push eax          ;
+      add  eax, 0xc     ;
+      push eax          ;
+      mov  edx, esp     ;
+
+      ; Invoke execve()
+      xor  eax, eax     ; eax = 0x00000000
+      mov   al, 0x0b    ; eax = 0x0000000b
+      int 0x80
+```
+
+ > Attempting a method similar to the previous task fails as there are not enough free registers for use. So we take an alternative approach. Here, we first construct the strings for the environment variables. Only after all the strings are constructed, then we move the stack pointer `esp` into `eax`. Since we know the lengths of all the strings, the address of each string is simply some fixed offset from  `eax`.
+
+ > ![env variables on stack](./img/env_stack.png "env variables on stack")
+
+The shellcode works as required.
+
+![myenv success](./img/myenv.png "myenv success")
+
+We also verify with `objdump` that the shellcode contains no zeros.
+
+![myenv objdump](./img/myenv_objdump.png "myenv objdump")
+
+### Note: Calling convention
+
+A *calling convention* is an implementation-level (assembly-level) scheme for how functions/sub-routines should receive parameters/arguments from their caller, and how they should return their result.
+
+In the case of shellcode, we call `execve()` at the end of the shellcode. In fact, `execve()` is called by what is known as a *system call (syscall)*.
+
+From the [syscall man page](https://man7.org/linux/man-pages/man2/syscall.2.html), under "Architecture calling conventions", the first table shows us the assembly instruction to invoke a syscall.
+
+![syscall instruction](./img/syscall_instruction.png "syscall instruction")
+
+From this, we see that the instruction `int 0x80` indeed triggers a syscall for the `i386` architecture. In addition, the syscall calls a function labelled by the number currently stored in `eax`.
+
+Looking up a `x86` Linux syscall table, we see that `execve()` has a syscall number of 11, which is `0xb` in hexadecimal. This corresponds to what we have seen so far: where the value `0xb` is loaded into `eax` right before the syscall is triggered.
+
+The second table in the [man page](https://man7.org/linux/man-pages/man2/syscall.2.html), tells us how to pass arguments into the function called by syscall.
+
+![syscall arguments](./img/syscall_args.png "syscall arguments")
+
+In the `i386` architecture, we see that the arguments are taken from the registers `ebx`, `ecx`, `edx`, `esi`, `edi` and `ebp`, **in order**.
+
+In the case of `execve()`, only three arguments are required: 
+
+```c
+int execve(const char *pathname, char *const argv[], char *const envp[]);
+```
+and `pathname` is equivalent to `argv[0]`. Thus we should have 
+
+```
+ebx = pathname = argv[0]
+ecx = pointer to argv[]
+edx = pointer to envp[] 
+```
+
+The following diagram summarises the calling convention for a syscall:
+
+![syscall calling convention](./img/calling_convention.png "syscall calling convention")
+
+## Task 2. Using Code segment
