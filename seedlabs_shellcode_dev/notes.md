@@ -491,3 +491,92 @@ The following diagram summarises the calling convention for a syscall:
 ![syscall calling convention](./img/calling_convention.png "syscall calling convention")
 
 ## Task 2. Using Code segment
+
+In task 1, the shellcode dynamically constructs all the necessary data structures on the stack, so their addresses can be obtained from the stack pointer `esp`. 
+
+Another approach to getting the addresses of the all necessary data structures, is to store the data in the code region, and obtain the addresses via the **function call mechanism**. An example is given in `mysh2.s`.
+
+```assembly
+; mysh2.s
+
+section .text
+  global _start
+    _start:
+	    BITS 32
+	    jmp short two
+    one:
+      pop ebx
+      xor eax, eax
+      mov [ebx+7], al
+      mov [ebx+8], ebx 
+      mov [ebx+12], eax
+      lea ecx, [ebx+8] 
+      xor edx, edx
+      mov al,  0x0b
+      int 0x80
+    two:
+      call one
+      db '/bin/sh*AAAABBBB' 
+```
+
+The code above first jumps to the instruction at location `two`, using the `jmp` instruction. Then the code jumps to location `one`, but this time using the `call` instruction -- before it jumps to the defined location, it records the address of the next instruction as the return address, so that when the function returns, it can return to the instruction immediately after the `call` instruction. 
+
+In this example, the "instruction" right after `call one` is not actually an instruction; but actually stores a string within the executeable itself. However, this does not matter, and the `call` instruction pushes the address of the string onto the stack, as the return address of the function frame.
+
+![db store string](./img/db_store_string.png "db store string") 
+
+From the `objdump` of `mysh2`, we can see that the string is placed directly into the shellcode. In the image above, the shellcode highlighted in red translates directly to the string "`/bin/sh*AAAABBBB`". Note that the disassembler tries to intepret the shellcode, and we obtain some nonsensical instructions.
+
+When we get into the function, i.e. after jumping to location `one`, the return address -- which at this point is the address of the string -- in at the top of the stack. Thus, the instruction `pop ebx` takes the return address and stores it into `ebx`. This is how we obtain the address of the string. 
+
+Furthermore, the string is just a placeholder string. The program needs to construct the required data structure inside this placeholder. Since the address of the string is known, the address of all the data structures in the string is easily deduced.
+
+To obtain an executable, we need to use the `--omagic` option when running the linker (`ld`), so that the code segment is writable. By default, the code segment is not writable. When this program runs, it needs to modify data stored in the code region; if the code region is not writable, then then program will crash. However, this is not a problem for actual attacks as the shellcode is typically injected into a writable data segment, like the stack or the heap. In summary, to generate the executable, we run:
+
+```bash
+$ nasm -f elf32 -o mysh2.o mysh2.s
+$ ld --omagic -m elf_i386 -o mysh2 mysh2.o
+```
+We take a closer look at the code segment `one` to see how the placeholder string is modified.
+
+```assembly
+; mysh2.s: lines 6-15
+
+one:
+  pop ebx
+  xor eax, eax
+  mov [ebx+7], al
+  mov [ebx+8], ebx 
+  mov [ebx+12], eax
+  lea ecx, [ebx+8] 
+  xor edx, edx
+  mov al,  0x0b
+  int 0x80
+```
+Going line by line: 
+
+1. `pop ebx` stores the address of the placeholder string into `ebx`.
+2. `xor eax, eax` clears the `eax` register.
+3. `mov [ebx+7], al` stores a `\x00` at the 7th position of the placeholder string, replacing `*` in the original string.
+4. `mov [ebx+8], ebx` stores the address of the placeholder string at the 8th position of the placeholder string, replacing `AAAA` in the original string.
+5. `mov [ebx+12], eax` stores `\x00000000` at the 12th position of the original string, replacing `BBBB` in the original string.
+
+    The diagram below summarises what has been done up to this point.
+
+    ![one](./img/one.png "one")
+
+6. `lea ecx, [ebx + 8]` stores the address of the contents at the address `ebx+8`. Essentially, this instruction is setting `ecx = ebx + 8`.
+7. `xor edx, edx` clears the `edx` register.
+8. The last two instructions form the syscall for `execve()`. 
+    
+    At this point, all the ingredients are in place for `execve()`.
+    * `ebx` contains the command `/bin/sh`, which gets executed by `execve()`,
+    * `ecx` contains an address to an array: `['/bin/sh', \x00]` which is `argv[]`,
+    * `edx` contains the environment variables, which is empty.
+
+In this task, we want to use the above technique to run the command `/usr/bin/env` to print out the environment variables:
+
+```
+aa=11
+bb=22
+```
