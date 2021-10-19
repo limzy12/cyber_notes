@@ -26,6 +26,8 @@ In this lab, we aim to understand the techniques employed in writing shellcode b
 2. Assembly code
 3. Disassembly
 
+All code found below are available [here](./src).
+
 ## Task 1. Writing Shellcode
 
 Here, we first begin with an example shellcode. Subsequently, the shellcode will be modified to accomplish various tasks. 

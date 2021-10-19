@@ -1,5 +1,5 @@
 # What the Shell? 
-An introduction to sending and receiving (reverse/bind) shells when exploiting target machines.
+An introduction to sending and receiving (reverse/bind) shells when exploiting target machines. Solutions to practice box tasks available [here](./practice.md).
 
 * [What is a shell?](#what-is-a-shell)
 * [Tools](#tools)
@@ -28,6 +28,7 @@ An introduction to sending and receiving (reverse/bind) shells when exploiting t
 * [Metasploit multi/handler](#metasploit-multihandler)
 * [WebShells](#webshells)
 * [Next steps](#next-steps)
+  
 ## What is a shell?
 
 A *shell* is what we use to interface with a Command Line environment. The common `bash` or `sh` programs in Linux, and `cmd.exe` and Powershell on Windows are all examples of a shell.
