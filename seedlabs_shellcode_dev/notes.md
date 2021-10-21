@@ -28,7 +28,7 @@ In this lab, we aim to understand the techniques employed in writing shellcode b
 
 All code found below are available [here](./src).
 
-## Task 1. Writing Shellcode
+## Task 1: Writing Shellcode
 
 Here, we first begin with an example shellcode. Subsequently, the shellcode will be modified to accomplish various tasks. 
 
@@ -385,7 +385,7 @@ We can verify that the shellcode has no zeros using `objdump`.
 
 ![ls -la objdump](./img/mysh_bash_objdump.png "ls -la objdump")
 
-### 1d. Providing environment variables for `execve()`
+### 1d: Providing environment variables for `execve()`
 
 The third parameter for the `execve()` system call is a pointer to the environment variable array which allows us to pass environment variables to the program. In the initial example `mysh.s`, we pass a null pointer to `execve()`, so no environment variable is passed to the program
 
@@ -505,7 +505,7 @@ The following diagram summarises the calling convention for a syscall:
 
 ![syscall calling convention](./img/calling_convention.png "syscall calling convention")
 
-## Task 2. Using Code segment
+## Task 2: Using Code segment
 
 In task 1, the shellcode dynamically constructs all the necessary data structures on the stack, so their addresses can be obtained from the stack pointer `esp`. 
 
