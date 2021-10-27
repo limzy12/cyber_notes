@@ -1,0 +1,5 @@
+break bof
+disable $bpnum
+break *0x7fffffffd8a7
+
+

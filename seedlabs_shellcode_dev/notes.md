@@ -177,8 +177,7 @@ There are various techniques that can get rid of zeros in the shell code:
   To overcome this, we can first set `eax` to zero (using the `xor` trick), and then assign the 8-bit number `0x99` to the `al` register, which refers to the least significant 8-bits of the `eax` register.
 
   > For the four of the general purpose 32-bit registers in the `x86` architecture -- `eax`, `ebx`, `ecx` and `edx`, we may refer to their subsections. Taking `eax` as an example, we may refer to the lower 16-bits of the register by `ax`. Within `ax`, we can refer to the lower 8-bits by `al` and the upper 8-bits by `ah`.
-
-
+  >
   >![Register aliasing](./img/register_alias.png "Register aliasing") 
   *Taken from [nayuki.io](https://www.nayuki.io/page/a-fundamental-introduction-to-x86-assembly-programming)*
 
@@ -457,7 +456,7 @@ section .text
 ```
 
  > Attempting a method similar to the previous task fails as there are not enough free registers for use. So we take an alternative approach. Here, we first construct the strings for the environment variables. Only after all the strings are constructed, then we move the stack pointer `esp` into `eax`. Since we know the lengths of all the strings, the address of each string is simply some fixed offset from  `eax`.
-
+>
  > ![env variables on stack](./img/env_stack.png "env variables on stack")
 
 The shellcode works as required.
