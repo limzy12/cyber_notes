@@ -17,7 +17,7 @@ All code found below are available [here](./src).
 
 Modern operating systems have implemented several security mechanisms to make the buffer overflow attack difficult. To simplify our attacks, we need to disable them first. Later on, we will enable them and see if our attacks are still successful.
 
-For convenience, a simple bash script `protect_off.sh` was written in order to turn off the protectibe measures as discussed below.
+For convenience, a simple bash script `protect_off.sh` was written in order to turn off the protective measures as discussed below.
 
 ### Address space randomisation
 
