@@ -148,4 +148,4 @@ On the "Contact" page of the Acme website, if we fill up the form and click on "
 Clicking on the event, we see that a request was sent to the file `/contact-msg`. Visiting the site gives us the flag:
 > THM{GOT_AJAX_FLAG}
 
-[Acme IT Support contact response](./img/acme_contact_msg.png "Acme IT Support contact response")
+![Acme IT Support contact response](./img/acme_contact_msg.png "Acme IT Support contact response")
