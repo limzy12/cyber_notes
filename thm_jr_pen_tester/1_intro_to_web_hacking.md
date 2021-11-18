@@ -222,7 +222,7 @@ Using the default credentials, we manage to access the page containing the flag:
 
 ![Acme IT Support framework flag](./img/acme_framework_flag.png "Acme IT Support framework flag")
 
-### OSINT
+### OSINT {#osint-content}
 
 Freely available tools that collect information can also help in discovering information about the target website.
 
@@ -278,4 +278,72 @@ For example, to use gobuster on the Acme website, we run the command
 ```
 
 ![Acme IT Support gobuster](./img/acme_gobuster.png "Acme IT Support gobuster")
+
+## Subdomain Enumeration
+
+Subdomain enumeration is the process of finding valid subdomains for a domain, in order to expand the attack surface and discover more points of vulnerability. Here, we explore three methods for subdomain enumeration: brute force, OSINT, and virtual hosts.
+
+### OSINT {#osint-subdomain}
+
+**Secure Sockets Layer/Transport Layer Security (SSL/TLS) certificates**
+
+When a SSL/TLS certificate is created for a domain by a Certificate Authority (CA), the CA takes part in "Certificate Transparency (CT) logs" -- publicly accessible logs of every SSL/TLS certificate created for the domain name. The purpose of CT logs is to prevent malicious and accidentally made certificates from being used.
+
+CT logs can be used to a penetration tester's advantage: to help discover subdomains of a domain. Websites like [crt.sh](https://crt.sh/) and [Google's transparency report](https://transparencyreport.google.com/https/certificates) offer searchable databases of certificates with both current and historical results.
+
+**Search Engines**
+
+Expanding from the discussion in [Google dorking](#osint-content), we can use advanced search methods to find new subdomains. 
+
+On Google, we can use the filter `site:*.domain.com -site:www.domain.com`. This searches for domains where `domain.com` is contained in the URL, excluding `www.domain.com` (`-` is the exclusion operator).
+
+**Sublist3r**
+
+To speed up the process of OSINT subdomain discovery, we can automate the above processes with tools like [Sublist3r](https://github.com/aboul3la/Sublist3r). 
+
+### Domain Name System (DNS) bruteforce
+
+Bruteforce DNS enumeration involves trying a large number of possible subdomains from a pre-defined list of commonly used subdomains. Tools are used to automate this process to make it quicker. One such tool is [dnsrecon](https://github.com/darkoperator/dnsrecon).
+
+### Virtual Hosts
+
+Some subdomains are not always hosted in publically accessible DNS results, such as development versions of a web application or administration portals. Instead, the DNS record can be kept on a private DNS server, or recorded on the developer's machine (at `/etc/hosts` on Linux, or `C:\Windows\System32\Drivers\etc\hosts` on Windows) to match domain names to IP addresses.
+
+Because web servers can host multiple websites from one server when a website is requested from a client, the server determines which website the client wants from the `Host` header of the HTTP request. We can utilise this header by making changes to it and monitoring the response to see if we have discovered a new subdomain. 
+
+Like with bruteforce techniques, we can automate this process using tools and a wordlist of commonly used subdomains. The tool [ffuf]() can be used to do this, using the command
+```sh
+~$ ffuf -w <PATH_TO_WORDLIST> -H "Host: FUZZ.domain.com" -u <WEB_SERVER_ADDRESS> 
+```
+The output can be further filtered using the `-fs` flag.
+
+## Authentication bypass
+
+In this section, we will discuss how website authentication methods can be bypassed, defeated or broken. These vulnerabilities can be critical as they will lead to user data leaks.
+
+### Username enumeration
+
+It is helpful to have a list of valid usernames when trying to find authentication vulnerabilities.
+
+We can leverage on website error messages in order to create a list of valid usernames. For example, on the Acme website, if we try to create a user with the name `admin`, we get an error message saying that "An account with this username already exists".
+
+![Acme IT Support user exists](./img/acme_user_exists.png "Acme IT Support user exists")
+
+Thus, we can produce a list of valid usernames by bruteforcing using a wordlist containing common usernames. To do this using ffuf, the command is:
+
+```sh
+~$ ffuf -w <PATH_TO_WORDLIST> -X POST -d <FORM_DATA> -H "Content-Type: application/x-www-form-urlencoded" -u <WEB_SERVER_ADDRESS> -mr <ERROR_MESSAGE>
+```
+
+### Bruteforce attack
+
+With a list of valid usernames, we can attempt a bruteforce attack on a login page, where we automate the process of trying a list of commonly used passwords against a list of usernames. Using ffuf, the commmand is
+
+```sh
+~$ ffuf -w <PATH_TO_USERNAME_LIST>:W1,<PATH_TO_PASSWORD_LIST>:W2 -X POST -d <FORM_DATA> -H "Content-Type: application/x-www-form-urlencoded" -u <WEB_SERVER_ADDRESS> -fc 200
+```
+
+Here, we specified `W1` and `W2` as fuzzing keywords. Thus, for the form data we should set the username and password to be submitted as `W1` and `W2` respectively. To filter for positive matches, the flag `-fc` to check for HTTP status codes other than 200.
+
+### Logic flaw
 
