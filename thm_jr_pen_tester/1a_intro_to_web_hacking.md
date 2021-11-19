@@ -1,5 +1,25 @@
-# 1. Introduction to Web Hacking
-Understanding and exploiting common web application vulnerabilities
+# 1a. Introduction to Web Hacking
+Understanding and exploiting common web application vulnerabilities. In this part, we discuss the preliminary research that can be done on a webpage or web application, before any exploitation is done.
+
+* [Walking an application](#walking-an-application)
+  * [Exploring the website](#exploring-the-website)
+  * [Viewing Page Source](#viewing-page-source)
+  * [Developer Tools - Inspector](#developer-tools---inspector)
+  * [Developer Tools - Debugger](#developer-tools---debugger)
+  * [Developer Tools - Network](#developer-tools---network)
+* [Content Discovery](#content-discovery)
+  * [Manual discovery](#manual-discovery)
+  * [OSINT (Content)](#osint-content)
+  * [Automated discovery](#automated-discovery)
+* [Subdomain Enumeration](#subdomain-enumeration)
+  * [OSINT (Subdomains)](#osint-subdomains)
+  * [Domain Name System (DNS) bruteforce](#domain-name-system-dns-bruteforce)
+  * [Virtual Hosts](#virtual-hosts)
+* [Authentication bypass](#authentication-bypass)
+  * [Username enumeration](#username-enumeration)
+  * [Bruteforce attack](#bruteforce-attack)
+  * [Logic flaw](#logic-flaw)
+  * [Cookie Tampering](#cookie-tampering)
 
 ## Walking an application
 
@@ -15,7 +35,7 @@ The tools that we will look at are:
 
 The role of a penetration tester when reviewing a website or web application is to discover featurs that can potentially be vulnerable and attempt to exploit them. Vulnerable features are commonly found in parts of a website that require human interaction.
 
-The best way to start is to explore the website using the browser and noting doen the individual pages/areas/features with a summary for each one.
+The best way to start is to explore the website using the browser and noting down the individual pages/areas/features with a summary for each one.
 
 We are given an example: a website for "Acme IT Support". 
 
