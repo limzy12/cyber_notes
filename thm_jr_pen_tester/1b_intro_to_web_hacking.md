@@ -34,3 +34,16 @@ The vulnerable endpoint may not always be a query string in the URL. It can also
 
 Sometimes endpoints may contain an unreferences parameter that was used during development, but accidentally got pushed to production. 
 
+### A pratical IDOR example
+
+On the Acme website, we log in to our account and go to the "Your Account" tab. We see that our information has been prefilled in the tab.
+
+![Acme IT Support prefilled info](./img/acme_prefilled.png "Acme IT Support prefilled info")
+
+We investigate how this information is filled using the "Network" tab in the developer tools. We see that there is a call to an endpoint `/api/v1/customer?id=15`, and the page returns the ID, username and email address in JSON format.
+
+![Acme IT Support request info](./img/acme_info_request.png "Acme IT Support request info")
+
+We can try to change the ID to test for an IDOR vulnerability. Changing the ID to "1", reveals the data of the user with `id=1`.
+
+![Acme IT Support IDOR](./img/acme_idor.png "Acme IT Support IDOR")
