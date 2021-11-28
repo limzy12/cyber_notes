@@ -1,4 +1,4 @@
-# 1a. Introduction to Web Hacking
+# 1b. Introduction to Web Hacking
 
 Understanding and exploiting common web application vulnerabilities. In this part, we look at various web vulnerabilities and how to exploit them. 
 
@@ -47,3 +47,74 @@ We investigate how this information is filled using the "Network" tab in the dev
 We can try to change the ID to test for an IDOR vulnerability. Changing the ID to "1", reveals the data of the user with `id=1`.
 
 ![Acme IT Support IDOR](./img/acme_idor.png "Acme IT Support IDOR")
+
+## File Inclusion
+
+Web applications can be written to request access to files (images, text, etc.) on a system via `GET` parameters. For example, if a user wants to access a CV on a web application, the request may look something like `http://webapp.thm/get.php?file=userCV.pdf`.
+
+In such cases, file inclusion vulnerabilities occur when the user input is not sanitised or validated, and the user has full control over the input. 
+
+If an attacker is able to exploit file inclusion vulnerabilities, they will be able to leak sensitive data. Furthermore, if an attacker is able to write to the server, it may be possible for them to gain remote code execution (RCE).
+
+### Path traversal
+
+*Path traversal* (also known as directory traversal) is a weeb sercurity vulnerability that allows and attacker to read operating system resources, such as local files on the server running the application. An attacker can exploit this vulnerability by manipulating and abusing the web application to locate and access files or directories stored **outside** of the application's root directory.
+
+Path traversal vulnerablities occur when the user's input is passed into a functiun such as `file_get_contents` in PHP, **without proper input validation or filtering**. 
+
+The graph below shows an example of how a web application stores files in `/var/www/app`. A proper request would be a request for the contents of `/var/www/app/CVs/userCV.pdf`. In this case, the request is made via a query string in the URL.  
+
+![Path traversal example](./img/path_traversal_eg.png "Path traversal example")
+
+Since the request is made via a query string, we can send malicious payloads via the URL to see how the web application behaves. Path traversal attacks (also known as **dot-dot-slash** attacks) take advantage of moving up one step in the directory using `../`. As in the image above, that attacker can send a malicious request: `http://webapp.thm/get.php?file=../../../../etc/passwd`, and if there is no proper input validation, the attacker wiil be able to read the contents of `/etc/passwd`. 
+
+Similarly, if the web application runs on a Windows server, then the attacker has to provide a valid Windows path.
+
+Sometimes, developers will only limit access to certain files or directories. Below is a (non-exhaustive) list of common OS files that we can try to access when testing.
+
+| Location | Description |
+| :---: | :--- |
+| `/etc/issue` | contains a message or system identification information, which is printed before the login prompt | 
+| `/etc/profile` | contains system-wide default variables |
+| `/proc/version` | specifies the version of the Linux kernel |
+| `/etc/passwd` | contains all registered users that have access to the system |
+| `/etc/shadow` | contains information about the system's users' passwords |
+| `/root/.bash_history` | contains the command history for the `root` user | 
+| `/var/log/dmessage` | contains global system messages, including messaged logged during system startup | 
+| `/var/mail/root` | contains all emails for the `root` user | 
+| `/root/.ssh/id_rsa` | contains **private** SSH keys for any known user on the server | 
+| `/var/log/apache2/access.log` | contains accessed requests for the Apache webserver | 
+| `C:\boot.ini` | contains the boot options for PCs with BIOS firmware | 
+
+### Local File Inclusion (LFI)
+
+LFI attacks against web applications are often due to a developer's lack of security awareness. With PHP, using functions such as `include`, `require`, `include_once`, and `require_once` often lead to vulnerable web applications. Here, we focus our discussion around PHP, but it is worth noting that LFI vulnerabilities can also occur in other languages like ASP, JSP, or even Node.js. LFI exploits follow the same concepts as path traversal.
+
+---
+**Scenario 1.**
+
+Suppose the web application provides two languages, and the user can select between `EN` for English and `AR` for Arabic. 
+
+```php
+<?php
+    include($_GET["lang"]);
+?>
+```
+
+The PHP code above uses a `GET` request via the URL parameter `lang` to include the file of the page. Thus, to load the English page, we make a HTTP request to `http://webapp.thm/index.php?lang=EN.php`, and to load the Arabic page, we make a HTTP request to `http://webapp.thm/index.php?lang=AR.php`. Here, we can also infer that `EN.php` and `AR.php` exist in the same directory as `index.php`. 
+
+Theoretically, if there is no input validation, we can access and display any readable file on the server. Suppose that we want to read the `/etc/passwd`, we can try to make a request to `http://webapp.thm/index.php?lang=/etc/passwd`. 
+
+--- 
+
+**Scenario 2.**
+
+Now, the developer decides to specify a directory in the function.
+
+```php
+<?php
+    include("languages/".$_GET["lang"])
+?>
+```
+
+In this case, any file path passed via `lang` is taken to be **relative** to the `languages` directory. If there is no input validation, an attacker can still access files on the system via path traversal. An example of a malicious request would be `http://webapp.thm/index.php?lang=../../../../etc/passwd`. 
