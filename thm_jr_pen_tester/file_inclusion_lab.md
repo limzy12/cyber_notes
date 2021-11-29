@@ -31,3 +31,18 @@ We attempt to directly request for `/etc/passwd`, but we get an error. From the 
 Thus, we know that the file path that we pass into the `file` parameter will be taken **relative** to the directory `includes/`. To get to `/etc/passwd`, we use `../` to traverse the path, and pass the value `../../../../etc/passwd` to the `file` parameter.
 
 ![File Inclusion lab 2 passwd](./img/file_inclusion_lab_2_passwd.png "File Inclusion lab 2 passwd")
+
+## Lab #3
+
+We are again given an input field, and we try to make a request to `/etc/passwd`. 
+
+![File Inclusion lab 3 error](./img/file_inclusion_lab_3_error.png "File Inclusion lab 3 error")
+
+From the error, we can see that:
+
+1. the file path is taken to be relative to the `includes/` directory (similar to [Lab #2](#lab-2)), and
+2. the file name is appended with `.php`. 
+
+To overcome this, we use the null byte trick. We know this will work since the second error tells us that the system is running PHP 5.2. We pass the value `../../../../etc/passwd%00` to the `file` parameter.
+
+![File Inclusion lab 3 passwd](./img/file_inclusion_lab_3_passwd.png "File Inclusion lab 3 passwd")

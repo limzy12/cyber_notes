@@ -118,3 +118,27 @@ Now, the developer decides to specify a directory in the function.
 ```
 
 In this case, any file path passed via `lang` is taken to be **relative** to the `languages` directory. If there is no input validation, an attacker can still access files on the system via path traversal. An example of a malicious request would be `http://webapp.thm/index.php?lang=../../../../etc/passwd`. 
+
+---
+
+**Scenario 3.**
+
+In the previous scenarios, we discovered how to exploit the web app by analysing its source code. Here, we are conduct **black-box testing**, where we do not have the source code. Thus, error messages play a significant role in helping us understand how the data is passed into, and processed in the web app.
+
+Suppose we have an entry point: `http://webapp.thm/index.php?lang=EN`. If we enter an invalid input, e.g. `lang=THM`, we get the following error code
+
+```
+Warning: include(languages/THM.php): failed to open stream: No such file or directory in /var/www/html/THM-4/index.php on line 12
+```
+
+From this error message, we can see that the `include()` function looks like `include(languages/THM.php)`. This tells us that the function includes files in the `languages` directory, and is adding `.php` to the user input. 
+
+Also, the error message tells us that the web application exists in the directory `/var/www/html/THM-4`. Thus, we will need to traverse the directory using `../`.  We try making the following request: `http://webapp.thm/index.php?lang=../../../../../etc/passwd`. The request again gives us an error
+
+```
+Warning: include(languages/../../../../../etc/passwd.php): failed to open stream: No such file or directory in /var/www/html/THM-4/index.php on line 12
+```
+
+Although we have managed to move out of the directory, we still need to deal with the input being appended with `.php`. To bypass this, we use a null byte (`%00`) in the user input to terminate the string. The `include()` function will ignore anything after the null byte, i.e. `include("languages/../../../../../etc/passwd%00".".php")` will be equivalent to `include("languages/../../../../../etc/passwd")`.
+
+> **Note that the null byte trick has been fixed since PHP 5.3.4**
