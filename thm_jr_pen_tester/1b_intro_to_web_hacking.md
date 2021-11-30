@@ -142,3 +142,13 @@ Warning: include(languages/../../../../../etc/passwd.php): failed to open stream
 Although we have managed to move out of the directory, we still need to deal with the input being appended with `.php`. To bypass this, we use a null byte (`%00`) in the user input to terminate the string. The `include()` function will ignore anything after the null byte, i.e. `include("languages/../../../../../etc/passwd%00".".php")` will be equivalent to `include("languages/../../../../../etc/passwd")`.
 
 > **Note that the null byte trick has been fixed since PHP 5.3.4**
+
+---
+
+**Scenario 4.**
+
+Building on from the previous scenario, suppose now the developer decides to filter keywords -- such as `/etc/passwd` to avoid disclosing sensitive information. There are two ways to bypass this: 
+
+1. using the null byte trick, or
+2. using the current directory trick `./` at the end of the filtered keyword, e.g. `http://webapp.thm/index.php?lang=/etc/passwd/.`
+

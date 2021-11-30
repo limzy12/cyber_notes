@@ -46,3 +46,13 @@ From the error, we can see that:
 To overcome this, we use the null byte trick. We know this will work since the second error tells us that the system is running PHP 5.2. We pass the value `../../../../etc/passwd%00` to the `file` parameter.
 
 ![File Inclusion lab 3 passwd](./img/file_inclusion_lab_3_passwd.png "File Inclusion lab 3 passwd")
+
+## Lab #4
+
+We are again given an input field, and we perform the usual recon. 
+
+![File Inclusion lab 4 blocked](./img/file_inclusion_lab_4_blocked.png "File Inclusion lab 4 blocked")
+
+It seems like the application filters the string for `/etc/passwd`. To bypass this, we use the `/.` trick, and send the request for `/etc/passwd/.` instead.
+
+![File Inclusion lab 4 blocked](./img/file_inclusion_lab_4_passwd.png "File Inclusion lab 4 passwd")
