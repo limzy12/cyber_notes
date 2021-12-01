@@ -80,3 +80,48 @@ Recon tells us that only files in the `THM-profile` directory can be accessed.
 To bypass this, we include the required directory in the payload: `THM-profile/../../../../etc/os-release`, and we successfully read the file.
 
 ![File Inclusion lab 6 os-release](./img/file_inclusion_lab_6_osrelease.png "File Inclusion lab 6 os-release")
+
+
+## Challenge
+
+![Challenge page](./img/file_inclusion_chall.png "Challenge page")
+
+**Challenge #1**
+
+The page tells us that we need to send a `POST` request with the `file` parameter.
+
+![Challenge 1 page](./img/file_inclusion_chall_1.png "Challenge 1 page")
+
+We send a `POST` request, with the payload: `file=/etc/flag1` and it gives us the flag.
+
+![Challenge 1 request](./img/file_inclusion_chall_1_post.png "Challenge 1 request")
+
+![Challenge 1 flag](./img/file_inclusion_chall_1_flag.png "Challenge 1 flag")
+
+>  F1x3d-iNpu7-f0rrn 
+
+**Challenge 2**
+
+The page tells us to refresh the page, but refreshing does not change anything.
+
+![Challenge 2 page](./img/file_inclusion_chall_2.png "Challenge 2 page")
+
+We open the developer tools and notice that there is a cookie:
+
+![Challenge 2 cookie](./img/file_inclusion_chall_2_cookie.png "Challenge 2 cookie")
+
+We try changing the value of the cookie to "Admin" and refresh the page.
+
+![Challenge 2 "Admin" cookie](./img/file_inclusion_chall_2_admin.png "Challenge 2 \"Admin\" cookie")
+
+We see that this causes the `include()` function to be `include(includes/Admin.php)`. Thus, the `include()` function on the web server should have the following structure:
+
+```php
+include("includes" . <value of THM cookie> . ".php")
+```
+
+The error messages also tell us that server is running PHP 5.2, so we can use the null byte trick, and that the application directory is `/var/www/html`. Thus, to get to `/etc/flag2`, we set the cookie value to `../../../../etc/flag2%00`.
+
+![Challenge 2 flag](./img/file_inclusion_chall_2_flag.png "Challenge 2 flag")
+
+> c00k13_i5_yuMmy1
