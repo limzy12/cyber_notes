@@ -152,3 +152,25 @@ Building on from the previous scenario, suppose now the developer decides to fil
 1. using the null byte trick, or
 2. using the current directory trick `./` at the end of the filtered keyword, e.g. `http://webapp.thm/index.php?lang=/etc/passwd/.`
 
+---
+
+**Scenario 5.**
+
+Suppose we attempt to make the request `http://webapp/thm/index.php?lang=../../../../etc/passwd`, and we receive the following error:
+
+```
+Warning: include(languages/etc/passwd): failed to open stream: No such file or directory in /var/www/html/THM-5/index.php on line 15
+```
+
+One possible explanation for this is that the developer replaces each instance of `../` with an empty string. To bypass this, we can edit the payload to be `....//....//....//....//etc/passwd`. If the filter is only run once, the payload above will be reduced to what we require.
+
+![Payload after filtering](./img/payload_filter_once.png "Payload after filtering")
+
+---
+
+**Scenario 6.**
+
+There may be cases where the developer forces the `include()` function to read from a defined directory which has to be included in the input to the web application, e.g. `http://webapp.thm/index.php?lang=languages/EN.php`. 
+
+To exploit it, we can simply include the directory in the usual payload, like so: `languages/../../../../../etc/passwd`.
+

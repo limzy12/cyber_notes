@@ -51,8 +51,32 @@ To overcome this, we use the null byte trick. We know this will work since the s
 
 We are again given an input field, and we perform the usual recon. 
 
+![File Inclusion lab 4 function](./img/file_inclusion_lab_4_function.png "File Inclusion lab 4 function")
+
+We see that the relevant function here is `file_get_contents()`.
+
 ![File Inclusion lab 4 blocked](./img/file_inclusion_lab_4_blocked.png "File Inclusion lab 4 blocked")
 
 It seems like the application filters the string for `/etc/passwd`. To bypass this, we use the `/.` trick, and send the request for `/etc/passwd/.` instead.
 
 ![File Inclusion lab 4 blocked](./img/file_inclusion_lab_4_passwd.png "File Inclusion lab 4 passwd")
+
+## Lab #5
+
+Performing the usual recon shows us that the substring `../` is replaced by an empty string.
+
+![File Inclusion lab 5 filtered](./img/file_inclusion_lab_5_filtered.png "File Inclusion lab 5 filtered")
+
+Using the payload `....//....//....//....//etc/passwd` bypasses the filtering, and we can successfully read `/etc/passwd`.
+
+![File Inclusion lab 5 passwd](./img/file_inclusion_lab_5_passwd.png "File Inclusion lab 5 passwd")
+
+## Lab #6
+
+Recon tells us that only files in the `THM-profile` directory can be accessed. 
+
+![File Inclusion lab 6 blocked](./img/file_inclusion_lab_6_blocked.png "File Inclusion lab 6 blocked")
+
+To bypass this, we include the required directory in the payload: `THM-profile/../../../../etc/os-release`, and we successfully read the file.
+
+![File Inclusion lab 6 os-release](./img/file_inclusion_lab_6_osrelease.png "File Inclusion lab 6 os-release")
