@@ -125,3 +125,44 @@ The error messages also tell us that server is running PHP 5.2, so we can use th
 ![Challenge 2 flag](./img/file_inclusion_chall_2_flag.png "Challenge 2 flag")
 
 > c00k13_i5_yuMmy1
+
+**Challenge 3**
+
+There are no special messages on this page, so we proceed to directly request for the file `/etc/flag3` via the input field.
+
+![Challenge 3 filtered](./img/file_inclusion_chall_3_filtered.png "Challenge 3 filtered")
+
+Notice from the error messages that:
+
+1. slashes `/` and numbers are filtered away
+2. the input is appended with the `.php` file extension
+3. the server uses PHP 5.2
+
+After some trial and error, it seems like all non-alphabetical characters are filtered from the query string. 
+
+At this point, I had no idea how to proceed, so I took a look at the provided hint. 
+
+![Challenge 3 hint](./img/file_inclusion_chall_3_hint.png "Challenge 3 hint")
+
+The hint tells us that the website uses the variable `$_REQUESTS` to accept HTTP requests. `$_REQUESTS` is a variable that contains all the contents of `$_GET`, `$_POST` and `$_COOKIE`. Thus, we should be able to also send the query parameter `file` via a `POST` request.
+
+We send the following payload via a `POST` request: `file=/etc/flag3%00`.
+
+![Challenge 3 request](./img/file_inclusion_chall_3_request.png "Challenge 3 request")
+
+![Challenge 3 flag](./img/file_inclusion_chall_3_flag.png "Challenge 3 flag")
+
+> P0st_1s_w0rk1in9
+
+**RFI in Playground**
+
+We use the input field in the "Playground" of the File Inclusion lab.
+
+![File Inclusion lab playground](./img/file_inclusion_playground.png "File Inclusion lab playground")
+
+First, I create the payload file for the RFI at `/tmp/hostname.php`: 
+
+```php
+<?php echo shell_exec("hostname"); ?>
+```
+
