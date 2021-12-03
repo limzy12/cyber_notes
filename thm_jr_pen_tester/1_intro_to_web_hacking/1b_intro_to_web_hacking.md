@@ -232,7 +232,10 @@ Suppose we have a web application that allows users to check the stock of a cert
 http://website.thm/stock?url=http://api.website.thm/api/stock/item?id=123
 ```
 
-However, a malicious user may change the value of the `url` parameter in the query string to something like `http://api.website.thm/api/user` which may contain sensitive user data.
+However, a malicious user may change the value of the `url` parameter in the query string to something like `http://api.website.thm/api/user` which may return sensitive user data to the attacker.
 
 ![SSRF example 1](./img/ssrf_eg_1.png "SSRF example 1")
 
+Suppose now, the developer alters the application such that it only needs to send the query `/item?id=123` in order to retrieve the required information. A malicious user can still perform an SSRF attack by utilising directory traversal.
+
+![SSRF example 12](./img/ssrf_eg_2.png "SSRF example 2")
