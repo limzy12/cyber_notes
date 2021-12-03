@@ -209,3 +209,30 @@ To prevent file inclusion vulnerabilities, the common recommendations are:
 * Allow only protocols and PHP wrappers that are needed.
 * Never trust user input and implement proper input validation.
 * Implement white- and black-listing for file names and locations.
+
+## Server-side Request Forgery (SSRF)
+
+*Server-side Request Forgery* (SSRF) is a vulnerability that allows a malicious user to cause the webserver to make an additional or edited HTTP request to the resource of the attacker's choosing. 
+
+There are two types of SSRF vulnerability:
+1. regular SSRF, where data is returned to the attacker's screen
+2. blind SSRF, where the SSRF occurs but no information is returned to the attacker's screen
+
+A successful SSRF attack may result in:
+* access to unauthorised areas,
+* access to customer/organisational data,
+* ability to scale to internal networks, and/or
+* access to authentication tokens/credentials.
+
+### Examples of SSRF
+
+Suppose we have a web application that allows users to check the stock of a certain item at `http://website.thm/stock`. In order to retrieve the stock information, the application queries a back-end API `http://api.website.thm/api/stock/item` with the item ID sent as a query string `id`. Thus, if a user wants to check the stock of the item with ID 123, the request to the application would look like:
+
+```
+http://website.thm/stock?url=http://api.website.thm/api/stock/item?id=123
+```
+
+However, a malicious user may change the value of the `url` parameter in the query string to something like `http://api.website.thm/api/user` which may contain sensitive user data.
+
+![SSRF example 1](./img/ssrf_eg_1.png "SSRF example 1")
+
